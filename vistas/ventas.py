@@ -122,6 +122,24 @@ def render_ventas():
 
         st.markdown("<br>", unsafe_allow_html=True)
         
+        # 3. MEDIDAS DE LA RECETA
+        with st.expander("👁️ Medidas de la Receta (Opcional)", expanded=True):
+            c_r1, c_r2 = st.columns(2)
+            with c_r1:
+                st.markdown("**Ojo Derecho (OD)**")
+                o1, o2, o3 = st.columns(3)
+                od_esf = o1.text_input("Esf", key="od_esf_v", placeholder="0.00")
+                od_cil = o2.text_input("Cil", key="od_cil_v", placeholder="0.00")
+                od_eje = o3.text_input("Eje", key="od_eje_v", placeholder="0")
+            with c_r2:
+                st.markdown("**Ojo Izquierdo (OI)**")
+                i1, i2, i3 = st.columns(3)
+                oi_esf = i1.text_input("Esf", key="oi_esf_v", placeholder="0.00")
+                oi_cil = i2.text_input("Cil", key="oi_cil_v", placeholder="0.00")
+                oi_eje = i3.text_input("Eje", key="oi_eje_v", placeholder="0")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        
         # PRECIOS Y COSTOS (MODO ADMIN OCULTO PARA TRABAJADORES)
         p1, p2 = st.columns(2)
         precio_lentes = p1.number_input("Precio Venta Lunas ($):", min_value=0.0, value=precio_sugerido)
