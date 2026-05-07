@@ -75,7 +75,7 @@ def generar_pdf_orden(data, order_id="N/A"):
     pdf.cell(90, 8, f"Tipo Lente: {data['tipo_lente']}", 0, 0); pdf.cell(90, 8, f"Material: {data['material']}", 0, 1)
     pdf.ln(2); pdf.multi_cell(0, 8, f"Tratamientos: {data['protecciones']}")
     pdf.ln(2); pdf.set_font("Arial", 'B', 11); pdf.cell(0, 8, "Observaciones:", ln=True)
-    pdf.set_font("Arial", '', 11); pdf.multi_cell(0, 8, data['observaciones'])
+    pdf.set_font("Arial", '', 11); pdf.multi_cell(0, 8, str(data.get('observaciones') or ""))
     
     out = pdf.output(dest='S')
     if isinstance(out, str):
