@@ -241,7 +241,7 @@ def render_ventas():
                             }
                             # Guardar en tabla ordenes_trabajo
                             # (Aquí llamaríamos a guardar_orden_trabajo pero requiere ajustar database.py)
-                            pass
+                            guardar_orden_trabajo(orden_data)
                     
                     st.success("Venta y Orden generadas correctamente.")
                     st.session_state.carrito_ventas = []
