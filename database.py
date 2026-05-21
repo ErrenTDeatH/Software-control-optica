@@ -8,6 +8,7 @@
 
 import os
 import pandas as pd
+from datetime import datetime
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
@@ -28,7 +29,6 @@ except ImportError:
 supabase: Client = None
 if SUPABASE_URL and SUPABASE_KEY:
     supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-
 
 # ══════════════════════════════════════════════════════════════
 # AUDITORÍA — Registro inmutable de cambios críticos
@@ -59,7 +59,6 @@ def registrar_auditoria(accion: str, entidad: str = "", detalle: str = "",
     except Exception as e:
         print(f"[Auditoría] Error registrando evento: {e}")
 
-
 def cargar_auditoria(limit: int = 500) -> pd.DataFrame:
     """Carga los registros de auditoría más recientes para el Admin."""
     try:
@@ -70,7 +69,6 @@ def cargar_auditoria(limit: int = 500) -> pd.DataFrame:
     except Exception as e:
         print(f"Error cargar_auditoria: {e}")
         return pd.DataFrame()
-
 
 # ══════════════════════════════════════════════════════════════
 # INVENTARIO (MONTURAS)
@@ -346,6 +344,7 @@ def guardar_todos_pacientes(df: pd.DataFrame):
             import streamlit as st
             st.session_state["db_error"] = f"Error guardando pacientes en la base de datos: {e}"
         except: pass
+
 def eliminar_paciente(p_id):
     """Elimina permanentemente un paciente de Supabase."""
     try:
@@ -452,6 +451,7 @@ def guardar_historia(row: dict):
         print(f"Error guardar_historia: {e}")
 
 def guardar_todas_historias(df: pd.DataFrame):
+    """Sincroniza el DataFrame completo de historias a Supabase."""
     try:
         if not supabase: return
         # Asegurar limpieza total de NaNs y conversión a strings
@@ -470,6 +470,7 @@ def guardar_todas_historias(df: pd.DataFrame):
             import streamlit as st
             st.session_state["db_error"] = f"🔥 ERROR CRÍTICO SUPABASE: {str(e)}\n\nDetalle técnico:\n{err_detail}"
         except: pass
+
 def eliminar_historia(h_id):
     """Elimina permanentemente una historia de Supabase."""
     try:
@@ -481,6 +482,7 @@ def eliminar_historia(h_id):
 # ══════════════════════════════════════════════════════════════
 # SUCURSALES
 # ══════════════════════════════════════════════════════════════
+
 def cargar_sucursales() -> pd.DataFrame:
     """Carga todas las sucursales desde Supabase."""
     try:
