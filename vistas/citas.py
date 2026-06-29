@@ -76,15 +76,18 @@ def render_lista_citas(df_mostrar, key_prefix):
                 st.rerun()
                 
         if cita.get("telefono"):
-            # Generar recordatorio amistoso en español para enviar por WhatsApp
+            # Generar recordatorio formal en español para enviar por WhatsApp
             msg = (
-                f"Hola, {cita['paciente_nombre']}! 👁️✨\n\n"
-                f"Le recordamos su próxima cita de optometría en *Happy Vision*:\n"
+                f"Estimado/a {cita['paciente_nombre']},\n\n"
+                f"Esperamos que se encuentre muy bien. Le saluda el equipo de *Happy Vision*.\n\n"
+                f"Le recordamos su próxima cita de optometría agendada:\n"
                 f"📅 *Fecha:* {cita['fecha']}\n"
                 f"⏰ *Hora:* {hora_str}\n"
                 f"🏢 *Sucursal:* {cita.get('sucursal', 'Matriz')}\n"
                 f"👨‍⚕️ *Optometrista:* {cita.get('optometrista', '')}\n\n"
-                f"Por favor, confirme su asistencia respondiendo a este mensaje. ¡Le esperamos!"
+                f"Por favor, confirme su asistencia respondiendo directamente a este mensaje por WhatsApp o comunicándose a nuestro número de atención: +593 96 324 1158.\n\n"
+                f"Atentamente,\n"
+                f"Happy Vision"
             )
             link = wa_link(cita["telefono"], msg)
             c3.link_button("💬 Recordatorio WA", link, use_container_width=True)
@@ -359,10 +362,13 @@ def render_citas():
                         
                     if tel:
                         msg = (
-                            f"Hola {nombre}, le saludamos de *Happy Vision*! 👁️✨\n\n"
-                            f"Ha llegado el momento de su chequeo visual de rutina anual o próximo control.\n"
-                            f"¿Le gustaría agendar una cita para cuidar su salud visual? Estaremos gustosos de atenderle.\n\n"
-                            f"Consultas al: +593 96 324 1158"
+                            f"Estimado/a {nombre},\n\n"
+                            f"Esperamos que se encuentre muy bien. Le saluda el equipo de *Happy Vision*.\n\n"
+                            f"Le escribimos para recordarle que es momento de agendar su control preventivo de salud visual periódico recomendado (cada {meses} meses) posterior a su última atención del día {fecha_ultima}.\n\n"
+                            f"Si desea programar su cita, puede hacerlo respondiendo directamente a este mensaje por WhatsApp o comunicándose a nuestro número de atención: +593 96 324 1158.\n\n"
+                            f"Estaremos gustosos de coordinar su cita en la fecha y hora que le resulte más conveniente.\n\n"
+                            f"Atentamente,\n"
+                            f"Happy Vision"
                         )
                         link = wa_link(tel, msg)
                         c_b2.link_button("📲 Invitar por WhatsApp", link, use_container_width=True)
