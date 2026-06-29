@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from database import cargar_todas_citas, guardar_cita, eliminar_cita
 from utils import wa_link
 
@@ -103,8 +103,18 @@ def render_citas():
     sucursal = st.session_state.get("sucursal_activa", "Matriz")
     df_pacientes = st.session_state.get("df_pacientes")
     
+    # Preselección desde el CRM
+    pre_sel_name = st.session_state.get("pre_sel_name", None)
+    expander_expanded = pre_sel_name is not None
+    
     # ── FORMULARIO PARA NUEVA CITA ────────────────────────────
-    with st.expander("➕ Agendar Nueva Cita", expanded=False):
+    with st.expander("➕ Agendar Nueva Cita", expanded=expander_expanded):
+        if pre_sel_name:
+            st.info(f"📍 Agendando cita sugerida para: **{pre_sel_name}**")
+            if st.button("🧹 Limpiar pre-selección", key="clear_pre_sel"):
+                st.session_state.pop("pre_sel_name", None)
+                st.rerun()
+                
         c1, c2 = st.columns(2)
         fecha = c1.date_input("Fecha de la Cita")
         hora = c2.time_input("Hora de la Cita")
@@ -132,7 +142,15 @@ def render_citas():
                     pacientes_list.append(label)
                     paciente_map[label] = prow
                     
-                paciente_sel = st.selectbox("Seleccione el Paciente", pacientes_list)
+                # Buscar índice del paciente preseleccionado si existe
+                default_idx = 0
+                if pre_sel_name:
+                    for idx, label in enumerate(pacientes_list):
+                        if label.startswith(pre_sel_name):
+                            default_idx = idx
+                            break
+                            
+                paciente_sel = st.selectbox("Seleccione el Paciente", pacientes_list, index=default_idx)
                 if paciente_sel:
                     selected_p = paciente_map[paciente_sel]
                     paciente_nombre = selected_p["nombre"]
@@ -151,7 +169,7 @@ def render_citas():
             st.text_input("Teléfono (Opcional)", value=telefono, disabled=True)
             
         c5, c6 = st.columns(2)
-        motivo = c5.text_input("Motivo de la Cita")
+        motivo = c5.text_input("Motivo de la Cita", value="Control de Rutina" if pre_sel_name else "")
         optometrista = c6.text_input("Optometrista Asignado", value=st.session_state.get("user_name", ""))
         
         if st.button("Agendar Cita", type="primary", use_container_width=True):
@@ -168,6 +186,7 @@ def render_citas():
                     "sucursal": sucursal,
                     "estado": "Pendiente"
                 }
+                st.session_state.pop("pre_sel_name", None)
                 guardar_cita(nueva_cita)
                 st.success("Cita agendada correctamente.")
                 st.rerun()
@@ -177,13 +196,45 @@ def render_citas():
     # ── CONTROL Y METRICAS DE HOY ─────────────────────────────
     df_citas = cargar_todas_citas(sucursal)
     
-    if not df_citas.empty:
-        hoy_str = datetime.now().strftime("%Y-%m-%d")
-        citas_hoy = df_citas[df_citas["fecha"] == hoy_str]
+    # CÁLCULO DE CONTROLES PENDIENTES (CRM)
+    df_h = st.session_state.get("df_historias")
+    df_p = st.session_state.get("df_pacientes")
+    df_alerta = pd.DataFrame()
+    
+    if df_h is not None and not df_h.empty and df_p is not None and not df_p.empty:
+        def proximo_control(row):
+            try:
+                fecha_consulta = datetime.strptime(str(row["fecha"]), "%Y-%m-%d").date()
+                meses = int(float(row.get("meses_proximo_control", 12) or 12))
+                return fecha_consulta + timedelta(days=meses * 30)
+            except Exception:
+                return None
+
+        df_h_copy = df_h.copy()
+        df_h_copy["proximo_control"] = df_h_copy.apply(proximo_control, axis=1)
         
-        pendientes_hoy = len(citas_hoy[citas_hoy["estado"] == "Pendiente"])
-        atendidas_hoy = len(citas_hoy[citas_hoy["estado"] == "Atendido"])
-        canceladas_hoy = len(citas_hoy[citas_hoy["estado"] == "Cancelado"])
+        df_h_sorted = df_h_copy.sort_values("fecha", ascending=False)
+        df_ultima = df_h_sorted.drop_duplicates(subset=["paciente_id"], keep="first").copy()
+        df_ultima = df_ultima.merge(df_p[["id", "nombre", "telefono"]], left_on="paciente_id", right_on="id", how="left", suffixes=("", "_pac"))
+        
+        hoy_date = datetime.now().date()
+        df_ultima["dias_para_control"] = df_ultima["proximo_control"].apply(
+            lambda d: (d - hoy_date).days if d is not None else None
+        )
+        
+        # Vencidos o próximos a vencer en los siguientes 30 días
+        mask_alerta = df_ultima["dias_para_control"].apply(
+            lambda d: d is not None and d <= 30
+        )
+        df_alerta = df_ultima[mask_alerta].sort_values("dias_para_control")
+    
+    if not df_citas.empty or not df_alerta.empty:
+        hoy_str = datetime.now().strftime("%Y-%m-%d")
+        citas_hoy = df_citas[df_citas["fecha"] == hoy_str] if not df_citas.empty else pd.DataFrame()
+        
+        pendientes_hoy = len(citas_hoy[citas_hoy["estado"] == "Pendiente"]) if not citas_hoy.empty else 0
+        atendidas_hoy = len(citas_hoy[citas_hoy["estado"] == "Atendido"]) if not citas_hoy.empty else 0
+        canceladas_hoy = len(citas_hoy[citas_hoy["estado"] == "Cancelado"]) if not citas_hoy.empty else 0
         
         st.markdown(f"""
         <div class="kpi-grid">
@@ -206,18 +257,23 @@ def render_citas():
         """, unsafe_allow_html=True)
         
         # ── SEPARACIÓN POR PESTAÑAS TEMPORALES ────────────────────
-        # Parsear fechas para organizar por pestañas
-        df_citas["fecha_parsed"] = pd.to_datetime(df_citas["fecha"]).dt.date
-        hoy_date = datetime.now().date()
+        df_hoy = pd.DataFrame()
+        df_proximas = pd.DataFrame()
+        df_historial = pd.DataFrame()
         
-        df_hoy = df_citas[df_citas["fecha_parsed"] == hoy_date]
-        df_proximas = df_citas[df_citas["fecha_parsed"] > hoy_date]
-        df_historial = df_citas[df_citas["fecha_parsed"] < hoy_date]
+        if not df_citas.empty:
+            df_citas["fecha_parsed"] = pd.to_datetime(df_citas["fecha"]).dt.date
+            hoy_date = datetime.now().date()
+            
+            df_hoy = df_citas[df_citas["fecha_parsed"] == hoy_date]
+            df_proximas = df_citas[df_citas["fecha_parsed"] > hoy_date]
+            df_historial = df_citas[df_citas["fecha_parsed"] < hoy_date]
         
-        tab_hoy, tab_proximas, tab_historial = st.tabs([
+        tab_hoy, tab_proximas, tab_historial, tab_crm = st.tabs([
             f"📅 Hoy ({len(df_hoy)})", 
             f"🚀 Próximas ({len(df_proximas)})", 
-            f"⏳ Historial ({len(df_historial)})"
+            f"⏳ Historial ({len(df_historial)})",
+            f"🔔 Controles CRM ({len(df_alerta)})"
         ])
         
         with tab_hoy:
@@ -232,5 +288,61 @@ def render_citas():
             st.markdown("<h4 style='color:#1e293b; margin-top:10px;'>Registro Histórico de Citas</h4>", unsafe_allow_html=True)
             render_lista_citas(df_historial, "historial")
             
+        with tab_crm:
+            st.markdown("<h4 style='color:#1e293b; margin-top:10px;'>Alertas de Próximos Controles y Pacientes Vencidos</h4>", unsafe_allow_html=True)
+            st.caption("Pacientes que se atendieron hace un año (o el intervalo programado) y requieren control visual de rutina.")
+            
+            if df_alerta.empty:
+                st.success("✅ Todos los pacientes están al día en sus controles.")
+            else:
+                for _, row in df_alerta.iterrows():
+                    dias = row.get("dias_para_control")
+                    nombre = row.get("nombre", row.get("paciente_nombre", ""))
+                    tel = str(row.get("telefono", "")).strip()
+                    fecha_ultima = row.get("fecha", "")
+                    fecha_control = row.get("proximo_control")
+                    meses = row.get("meses_proximo_control", 12)
+                    
+                    if dias is not None and dias < 0:
+                        estado_label = f"🔴 Vencido hace {abs(dias)} días"
+                        color = "#ef4444"
+                        bg = "#fee2e2"
+                        text_color = "#991b1b"
+                    else:
+                        estado_label = f"🟡 Vence en {dias} días ({fecha_control})"
+                        color = "#f59e0b"
+                        bg = "#fef9c3"
+                        text_color = "#854d0e"
+                        
+                    card_crm_html = f"""
+                    <div style="background: {bg}; border-left: 5px solid {color}; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <span style="font-size: 1.1rem; font-weight: 700; color: {text_color};">👤 {nombre}</span>
+                            <span style="font-weight: 600; font-size: 0.85rem; color: {text_color};">{estado_label}</span>
+                        </div>
+                        <div style="font-size: 0.88rem; color: #475569;">
+                            📅 <b>Última consulta:</b> {fecha_ultima} &nbsp;&nbsp;•&nbsp;&nbsp; ⏳ <b>Control cada:</b> {meses} meses &nbsp;&nbsp;•&nbsp;&nbsp; 📞 <b>Teléfono:</b> {tel or 'Sin teléfono'}
+                        </div>
+                    </div>
+                    """
+                    st.markdown(card_crm_html, unsafe_allow_html=True)
+                    
+                    c_b1, c_b2, _ = st.columns([1.5, 2.5, 6])
+                    
+                    if c_b1.button("📅 Agendar Cita", key=f"crm_book_{row['paciente_id']}", use_container_width=True):
+                        st.session_state.pre_sel_name = nombre
+                        st.rerun()
+                        
+                    if tel:
+                        msg = (
+                            f"Hola {nombre}, le saludamos de *Happy Vision*! 👁️✨\n\n"
+                            f"Ha llegado el momento de su chequeo visual de rutina anual o próximo control.\n"
+                            f"¿Le gustaría agendar una cita para cuidar su salud visual? Estaremos gustosos de atenderle.\n\n"
+                            f"Consultas al: +593 96 324 1158"
+                        )
+                        link = wa_link(tel, msg)
+                        c_b2.link_button("📲 Invitar por WhatsApp", link, use_container_width=True)
+                        
+                    st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
     else:
         st.info("No hay citas registradas en esta sucursal.")
