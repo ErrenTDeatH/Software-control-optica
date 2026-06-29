@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
@@ -101,9 +102,10 @@ def render_crm():
             with col_wa:
                 if tel:
                     msg = (
-                        f"Hola {nombre}, ha llegado el momento de tu chequeo visual de rutina. "
-                        f"¿Te gustaría agendar una cita en Happy Vision para cuidar tu salud visual? "
-                        f"📞 +593 96 324 1158"
+                        f"¡Hola, {nombre}! ✨ Esperamos que estés teniendo un excelente día.\n\n"
+                        f"En Happy Vision nos importa tu bienestar visual. Ya han pasado {meses} meses desde tu última visita el {fecha_ultima}, por lo que es el momento ideal para tu chequeo periódico de rutina. 👁️\n\n"
+                        f"¿Te gustaría agendar tu cita para esta semana?\n"
+                        f"📱 Responde directamente a este mensaje y coordinamos el día y la hora que te queden más cómodos. ¡Te esperamos!"
                     )
                     link = wa_link(tel, msg)
                     st.markdown(
