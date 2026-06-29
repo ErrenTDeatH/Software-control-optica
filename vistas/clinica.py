@@ -785,8 +785,6 @@ def render_clinica():
                             ]
                             st.success(f"✅ Paciente **{display_name}** eliminado.")
                             st.rerun()
-                else:
-                    col_f.button("🔒", key=f"rap_del_{rp['id']}", use_container_width=True, help="Solo Administrador", disabled=True)
                 st.divider()
 
     # ── FORMULARIO DE NUEVA CONSULTA ─────────────────────────────────
