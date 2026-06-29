@@ -74,3 +74,37 @@ CREATE TABLE IF NOT EXISTS historias_clinicas (
 ALTER TABLE historias_clinicas ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow all" ON historias_clinicas;
 CREATE POLICY "Allow all" ON historias_clinicas FOR ALL TO anon USING (true) WITH CHECK (true);
+
+-- 4. Tabla de Citas
+CREATE TABLE IF NOT EXISTS citas (
+    id BIGSERIAL PRIMARY KEY,
+    fecha TEXT NOT NULL,
+    hora TEXT NOT NULL,
+    paciente_nombre TEXT NOT NULL,
+    telefono TEXT,
+    motivo TEXT,
+    optometrista TEXT,
+    sucursal TEXT NOT NULL,
+    estado TEXT DEFAULT 'Pendiente'
+);
+ALTER TABLE citas ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all" ON citas;
+CREATE POLICY "Allow all" ON citas FOR ALL TO anon USING (true) WITH CHECK (true);
+
+-- 5. Tabla de Ventas
+CREATE TABLE IF NOT EXISTS ventas (
+    id BIGSERIAL PRIMARY KEY,
+    cliente TEXT NOT NULL,
+    identificacion TEXT,
+    total DOUBLE PRECISION NOT NULL,
+    costo_total DOUBLE PRECISION,
+    abono DOUBLE PRECISION,
+    saldo DOUBLE PRECISION,
+    metodo_pago TEXT,
+    sucursal TEXT,
+    detalles JSONB,
+    fecha TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+ALTER TABLE ventas ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all" ON ventas;
+CREATE POLICY "Allow all" ON ventas FOR ALL TO anon USING (true) WITH CHECK (true);
