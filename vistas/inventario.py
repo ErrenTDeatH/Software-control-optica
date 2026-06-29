@@ -160,7 +160,15 @@ def render_inventario():
         pdf_bytes = generar_pdf_inventario(df_f, sucursal_activa, st.session_state.get("user_name", ""))
         st.download_button("📥 PDF Control", data=pdf_bytes, file_name=f"Control_Inventario_{sucursal_activa}.pdf", mime="application/pdf", use_container_width=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    ITEMS_POR_PAGINA = 50
+    total_paginas = max(1, (len(df_f) - 1) // ITEMS_POR_PAGINA + 1)
+    
+    c_pag1, c_pag2 = st.columns([4, 1])
+    pag_actual = 1
+    if total_paginas > 1:
+        pag_actual = c_pag2.selectbox("📄 Paginación", range(1, total_paginas + 1), format_func=lambda x: f"Página {x} de {total_paginas}", key="inv_pag", label_visibility="collapsed")
+    
+    df_pagina = df_f.iloc[(pag_actual - 1) * ITEMS_POR_PAGINA : pag_actual * ITEMS_POR_PAGINA]
     
     # ── ENCABEZADOS ────────────────────────────────────────────
     cols_ratio = [1.2, 3.2, 1.2, 1.2, 1.8, 0.9, 0.9, 0.9]
@@ -172,7 +180,7 @@ def render_inventario():
     st.markdown("<hr style='margin:10px 0; opacity:0.2;'>", unsafe_allow_html=True)
     
     # ── FILAS DE DATOS ─────────────────────────────────────────
-    for idx, (_, row) in enumerate(df_f.iterrows()):
+    for idx, (_, row) in enumerate(df_pagina.iterrows()):
         # Lógica de Stock Bajo
         stock_val = float(row.get("cantidad_disponible", 0))
         is_low = stock_val <= 3
