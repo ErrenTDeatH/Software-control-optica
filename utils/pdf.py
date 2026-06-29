@@ -5,7 +5,7 @@ Certificado Visual + Informe Médico
 
 import io
 import os
-from datetime import date
+from datetime import date, datetime
 import pandas as pd
 from fpdf import FPDF
 
