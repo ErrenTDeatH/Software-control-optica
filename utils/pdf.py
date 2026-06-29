@@ -524,7 +524,10 @@ def generar_pdf_inventario(df_inv: pd.DataFrame, sucursal: str, supervisor: str 
     pdf.cell(90, 6, _s("Firma del Responsable / Auditor"), ln=False, align="C")
     pdf.cell(90, 6, _s(f"Firma del Supervisor ({supervisor})" if supervisor else "Firma del Supervisor"), ln=True, align="C")
 
-    return pdf.output(dest="S").encode("latin-1")
+    raw = pdf.output(dest="S")
+    if isinstance(raw, (bytes, bytearray)):
+        return bytes(raw)
+    return raw.encode("latin-1")
 
 def generar_pdf_venta(venta_data: dict) -> bytes:
     """Genera un PDF de factura/ticket para una venta directa."""
