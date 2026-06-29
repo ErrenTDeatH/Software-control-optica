@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Scale: 1:1
 HAPPY VISION · vistas/dashboard.py
@@ -79,18 +80,13 @@ def render_dashboard():
     """, unsafe_allow_html=True)
 
     sucursal = st.session_state.get("sucursal_activa", "Matriz")
-    es_admin = st.session_state.get("user_role") == "Administrador"
-
-    if es_admin:
-        # Administrador tiene acceso a la analítica de negocios avanzada
-        tabs = st.tabs(["🏠 Panel Operativo Diario", "📊 Inteligencia de Negocios (BI)"])
-        with tabs[0]:
-            render_panel_operativo(sucursal)
-        with tabs[1]:
-            render_bi_dashboard(sucursal)
-    else:
-        # Colaborador estándar solo ve la operativa diaria
+    
+    # Habilitamos las pestañas gerenciales para todos los roles (facilita la consulta al propietario/directivos)
+    tabs = st.tabs(["🏠 Panel Operativo Diario", "📊 Inteligencia de Negocios (BI)"])
+    with tabs[0]:
         render_panel_operativo(sucursal)
+    with tabs[1]:
+        render_bi_dashboard(sucursal)
 
 
 def render_panel_operativo(sucursal):
@@ -357,6 +353,28 @@ def render_bi_dashboard(sucursal_activa):
                 st.dataframe(df_sold[["Producto", "Unidades Vendidas", "Ingresos Totales", "Clasificación ABC"]].head(8), use_container_width=True, hide_index=True)
     else:
         st.info("Sin datos para análisis de rotación ABC.")
+
+    # ── AGREGAR EL ANÁLISIS ABC DE STOCK DE INVENTARIO (BODEGA) ORIGINAL ──
+    st.markdown("#### 2.1. Análisis de Valor Estancado en Stock (Inventario en Bodega)")
+    if not df_inv.empty:
+        df_inv_copy = df_inv.copy()
+        df_inv_copy['precio_venta'] = pd.to_numeric(df_inv_copy.get('precio_venta', 0), errors='coerce').fillna(0)
+        df_inv_copy['cantidad'] = pd.to_numeric(df_inv_copy.get('cantidad_disponible', df_inv_copy.get('stock', 0)), errors='coerce').fillna(0)
+        df_inv_copy['valor_potencial'] = df_inv_copy['precio_venta'] * df_inv_copy['cantidad']
+        
+        col_inv_abc1, col_inv_abc2 = st.columns([1, 1])
+        with col_inv_abc1:
+            fig_abc_stock = px.pie(df_inv_copy.sort_values('valor_potencial', ascending=False).head(10), 
+                             names='nombre', values='valor_potencial', 
+                             title="Top 10 Productos por Valor Estancado en Stock")
+            fig_abc_stock.update_layout(height=300, margin=dict(t=30, b=10, l=10, r=10))
+            st.plotly_chart(fig_abc_stock, use_container_width=True)
+        with col_inv_abc2:
+            st.caption("📦 **Valorización de Stock en Bodega:**")
+            st.write("Este gráfico detalla los productos que representan el mayor valor monetario inmovilizado en tus perchas y almacén.")
+            st.dataframe(df_inv_copy[["nombre", "cantidad", "precio_venta", "valor_potencial"]].sort_values("valor_potencial", ascending=False).head(8), use_container_width=True, hide_index=True)
+    else:
+        st.info("No hay datos de inventario en bodega para valorizar.")
 
     st.markdown("---")
 
