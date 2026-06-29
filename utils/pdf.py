@@ -452,6 +452,78 @@ def generar_pdf_ticket(orden: dict, sucursal_info: dict = None) -> bytes:
     pdf.set_font("Helvetica", "B", 8)
     pdf.cell(0, 5, _s(f"📍 Sucursal: {orden['sucursal']} | Happy Vision"), ln=True, align="C")
 
+# ══════════════════════════════════════════════════════════════
+# REPORTE DE INVENTARIO FÍSICO (PDF)
+# ══════════════════════════════════════════════════════════════
+def generar_pdf_inventario(df_inv: pd.DataFrame, sucursal: str, supervisor: str = "") -> bytes:
+    """Genera un PDF con formato de tabla tipo Excel para control de inventario físico."""
+    pdf = FPDF(orientation="P", unit="mm", format="A4")
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=30)
+    pdf.set_margins(10, 15, 10)
+
+    # ─ Encabezado ────────────────────────────────────────────────
+    logo_path = "logo.png" if os.path.exists("logo.png") else None
+    if logo_path:
+        pdf.image(logo_path, x=10, y=10, w=35)
+    
+    pdf.set_y(15)
+    pdf.set_font("Helvetica", "B", 14)
+    pdf.set_text_color(0, 160, 180)
+    pdf.cell(0, 8, _s("REPORTE PARA CONTROL DE INVENTARIO FÍSICO"), ln=True, align="C")
+    
+    pdf.set_font("Helvetica", "", 10)
+    pdf.set_text_color(100, 116, 139)
+    fecha_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+    pdf.cell(0, 6, _s(f"Sucursal: {sucursal}   |   Fecha de emisión: {fecha_str}"), ln=True, align="C")
+    pdf.ln(10)
+
+    # ─ Encabezados de Tabla ──────────────────────────────────────
+    pdf.set_font("Helvetica", "B", 8)
+    pdf.set_fill_color(241, 245, 249)
+    pdf.set_text_color(30, 41, 59)
+    
+    col_widths = [15, 55, 30, 20, 25, 45]
+    headers = ["Cód.", "Producto / Descripción", "Categoría", "Stock Sist.", "Físico (Real)", "Observación"]
+    
+    for w, h in zip(col_widths, headers):
+        pdf.cell(w, 8, _s(h), border=1, fill=True, align="C")
+    pdf.ln()
+
+    # ─ Filas de la Tabla ─────────────────────────────────────────
+    pdf.set_font("Helvetica", "", 8)
+    pdf.set_text_color(0, 0, 0)
+    
+    for _, row in df_inv.iterrows():
+        cod = str(row.get("codigo_proveedor", row.get("id", "")))
+        nombre = str(row.get("nombre", ""))[:35]
+        cat = str(row.get("categoria", ""))[:15]
+        stock = str(row.get("stock", row.get("cantidad_disponible", 0)))
+        
+        pdf.cell(col_widths[0], 7, _s(cod), border=1, align="C")
+        pdf.cell(col_widths[1], 7, _s(nombre), border=1, align="L")
+        pdf.cell(col_widths[2], 7, _s(cat), border=1, align="C")
+        pdf.cell(col_widths[3], 7, _s(stock), border=1, align="C")
+        pdf.cell(col_widths[4], 7, "", border=1, align="C") # Espacio para llenar
+        pdf.cell(col_widths[5], 7, "", border=1, align="L") # Espacio para observación
+        pdf.ln()
+
+    # ─ Zona de Firmas (Footer Fijo) ──────────────────────────────
+    # Si queda poco espacio, forzamos un salto de página para la firma
+    if pdf.get_y() > 240:
+        pdf.add_page()
+        pdf.set_y(30)
+    else:
+        pdf.ln(25)
+        
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(90, 8, _s("___________________________________"), ln=False, align="C")
+    pdf.cell(90, 8, _s("___________________________________"), ln=True, align="C")
+    
+    pdf.set_font("Helvetica", "", 9)
+    pdf.cell(90, 6, _s("Firma del Responsable / Auditor"), ln=False, align="C")
+    pdf.cell(90, 6, _s(f"Firma del Supervisor ({supervisor})" if supervisor else "Firma del Supervisor"), ln=True, align="C")
+
     return pdf.output(dest="S").encode("latin-1")
 
 def generar_pdf_venta(venta_data: dict) -> bytes:

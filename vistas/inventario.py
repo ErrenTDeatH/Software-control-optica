@@ -102,7 +102,7 @@ def render_inventario():
             df[col] = default
 
     # Buscador, Filtros y Botón de Agregar (En una sola fila)
-    f1, f2, f3 = st.columns([2.5, 1, 1])
+    f1, f2, f3, f4 = st.columns([2, 1, 1, 1])
     busq = f1.text_input("🔍 Buscar por código, marca o producto...", label_visibility="collapsed", placeholder="Buscar...")
     f_cat = f2.selectbox("Categoría", ["Todas"] + sorted(df["categoria"].unique().tolist()), label_visibility="collapsed")
     
@@ -154,6 +154,11 @@ def render_inventario():
         df_f = df_f[df_f.apply(lambda r: busq.lower() in str(r).lower(), axis=1)]
     if f_cat != "Todas":
         df_f = df_f[df_f["categoria"] == f_cat]
+
+    with f4:
+        from utils.pdf import generar_pdf_inventario
+        pdf_bytes = generar_pdf_inventario(df_f, sucursal_activa, st.session_state.get("user_name", ""))
+        st.download_button("📥 PDF Control", data=pdf_bytes, file_name=f"Control_Inventario_{sucursal_activa}.pdf", mime="application/pdf", use_container_width=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
     
