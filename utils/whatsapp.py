@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 utils/whatsapp.py — Funciones de mensajería WhatsApp para Happy Vision
 """
