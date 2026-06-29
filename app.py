@@ -870,5 +870,5 @@ elif page == "Configuracion":
 else:
     render_clinica()
 
-# ── Renderizar Botón Flotante de Inteligencia Artificial ──
-render_ai_assistant()
+# ── Renderizar Botón Flotante de Inteligencia Artificial (Desactivado) ──
+# render_ai_assistant()
