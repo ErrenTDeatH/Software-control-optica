@@ -457,7 +457,7 @@ def generar_pdf_ticket(orden: dict, sucursal_info: dict = None) -> bytes:
 # ══════════════════════════════════════════════════════════════
 def generar_pdf_inventario(df_inv: pd.DataFrame, sucursal: str, supervisor: str = "") -> bytes:
     """Genera un PDF con formato de tabla tipo Excel para control de inventario físico."""
-    pdf = FPDF(orientation="P", unit="mm", format="A4")
+    pdf = FPDF(orientation="L", unit="mm", format="A4")
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=30)
     pdf.set_margins(10, 15, 10)
@@ -483,8 +483,8 @@ def generar_pdf_inventario(df_inv: pd.DataFrame, sucursal: str, supervisor: str 
     pdf.set_fill_color(241, 245, 249)
     pdf.set_text_color(30, 41, 59)
     
-    col_widths = [15, 55, 30, 20, 25, 45]
-    headers = ["Cód.", "Producto / Descripción", "Categoría", "Stock Sist.", "Físico (Real)", "Observación"]
+    col_widths = [15, 50, 25, 22, 25, 15, 15, 15, 25, 70]
+    headers = ["Cód.", "Producto / Descripción", "Categoría", "Marca", "Proveedor", "Costo", "PVP", "Stock", "Físico", "Observación"]
     
     for w, h in zip(col_widths, headers):
         pdf.cell(w, 8, _s(h), border=1, fill=True, align="C")
@@ -495,34 +495,54 @@ def generar_pdf_inventario(df_inv: pd.DataFrame, sucursal: str, supervisor: str 
     pdf.set_text_color(0, 0, 0)
     
     for _, row in df_inv.iterrows():
-        cod = str(row.get("codigo_proveedor", row.get("id", "")))
-        nombre = str(row.get("nombre", ""))[:35]
+        cod = str(row.get("codigo_referencia", row.get("codigo_proveedor", row.get("id", ""))))
+        if not cod or cod == "nan": cod = str(row.get("id", ""))
+        cod = cod[:8]
+        
+        nombre = str(row.get("nombre", ""))[:32]
         cat = str(row.get("categoria", ""))[:15]
+        marca = str(row.get("marca", ""))[:12]
+        prov = str(row.get("proveedor", ""))[:15]
+        
+        try:
+            costo = f"${float(row.get('costo_compra', 0)):.2f}"
+        except:
+            costo = "$0.00"
+            
+        try:
+            pvp = f"${float(row.get('precio_venta', 0)):.2f}"
+        except:
+            pvp = "$0.00"
+            
         stock = str(row.get("stock", row.get("cantidad_disponible", 0)))
         
         pdf.cell(col_widths[0], 7, _s(cod), border=1, align="C")
         pdf.cell(col_widths[1], 7, _s(nombre), border=1, align="L")
         pdf.cell(col_widths[2], 7, _s(cat), border=1, align="C")
-        pdf.cell(col_widths[3], 7, _s(stock), border=1, align="C")
-        pdf.cell(col_widths[4], 7, "", border=1, align="C") # Espacio para llenar
-        pdf.cell(col_widths[5], 7, "", border=1, align="L") # Espacio para observación
+        pdf.cell(col_widths[3], 7, _s(marca), border=1, align="C")
+        pdf.cell(col_widths[4], 7, _s(prov), border=1, align="C")
+        pdf.cell(col_widths[5], 7, _s(costo), border=1, align="R")
+        pdf.cell(col_widths[6], 7, _s(pvp), border=1, align="R")
+        pdf.cell(col_widths[7], 7, _s(stock), border=1, align="C")
+        pdf.cell(col_widths[8], 7, "", border=1, align="C") # Espacio para llenar
+        pdf.cell(col_widths[9], 7, "", border=1, align="L") # Espacio para observación
         pdf.ln()
 
     # ─ Zona de Firmas (Footer Fijo) ──────────────────────────────
     # Si queda poco espacio, forzamos un salto de página para la firma
-    if pdf.get_y() > 240:
+    if pdf.get_y() > 165:  # En landscape (L), la altura es 210mm. 210 - 30 (margen bottom) = 180mm max
         pdf.add_page()
         pdf.set_y(30)
     else:
         pdf.ln(25)
         
     pdf.set_font("Helvetica", "B", 10)
-    pdf.cell(90, 8, _s("___________________________________"), ln=False, align="C")
-    pdf.cell(90, 8, _s("___________________________________"), ln=True, align="C")
+    pdf.cell(138, 8, _s("___________________________________"), ln=False, align="C")
+    pdf.cell(138, 8, _s("___________________________________"), ln=True, align="C")
     
     pdf.set_font("Helvetica", "", 9)
-    pdf.cell(90, 6, _s("Firma del Responsable / Auditor"), ln=False, align="C")
-    pdf.cell(90, 6, _s(f"Firma del Supervisor ({supervisor})" if supervisor else "Firma del Supervisor"), ln=True, align="C")
+    pdf.cell(138, 6, _s("Firma del Responsable / Auditor"), ln=False, align="C")
+    pdf.cell(138, 6, _s(f"Firma del Supervisor ({supervisor})" if supervisor else "Firma del Supervisor"), ln=True, align="C")
 
     raw = pdf.output(dest="S")
     if isinstance(raw, (bytes, bytearray)):
