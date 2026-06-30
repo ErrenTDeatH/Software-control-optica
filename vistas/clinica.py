@@ -21,16 +21,16 @@ def _render_lectura_historia(hrow):
 
     st.markdown("""
     <style>
-    .hc-card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px 20px; margin-bottom:12px; }
-    .hc-card-blue { background:linear-gradient(135deg,#eff6ff,#dbeafe); border:1px solid #bfdbfe; border-radius:12px; padding:16px 20px; margin-bottom:12px; }
-    .hc-card-green { background:linear-gradient(135deg,#f0fdf4,#dcfce7); border:1px solid #86efac; border-radius:12px; padding:16px 20px; margin-bottom:12px; }
-    .hc-card-amber { background:linear-gradient(135deg,#fffbeb,#fef3c7); border:1px solid #fcd34d; border-radius:12px; padding:16px 20px; margin-bottom:12px; }
-    .hc-section-title { font-size:13px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px; }
-    .hc-label { font-size:11px; color:#94a3b8; font-weight:600; text-transform:uppercase; letter-spacing:.05em; margin-bottom:2px; }
-    .hc-value { font-size:15px; color:#1e293b; font-weight:600; margin-bottom:0; }
-    .hc-value-mono { font-family:monospace; font-size:14px; color:#1e40af; font-weight:700; }
+    .hc-card { background:#fdf6ee; border:1px solid #e8d5b7; border-radius:12px; padding:16px 20px; margin-bottom:12px; }
+    .hc-card-blue { background:linear-gradient(135deg,#fdf6ee,#f5e6cc); border:1px solid #d4a96a; border-radius:12px; padding:16px 20px; margin-bottom:12px; }
+    .hc-card-green { background:linear-gradient(135deg,#faf5eb,#f0e8d0); border:1px solid #c9a96e; border-radius:12px; padding:16px 20px; margin-bottom:12px; }
+    .hc-card-amber { background:linear-gradient(135deg,#fefce8,#fef9c3); border:1px solid #d4a017; border-radius:12px; padding:16px 20px; margin-bottom:12px; }
+    .hc-section-title { font-size:13px; font-weight:700; color:#7c5c2e; text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px; }
+    .hc-label { font-size:11px; color:#a0856a; font-weight:600; text-transform:uppercase; letter-spacing:.05em; margin-bottom:2px; }
+    .hc-value { font-size:15px; color:#3b2a1a; font-weight:600; margin-bottom:0; }
+    .hc-value-mono { font-family:monospace; font-size:14px; color:#7c3f00; font-weight:700; }
     .hc2-header {
-        background: linear-gradient(135deg,#0f172a,#1e3a8a);
+        background: linear-gradient(135deg,#2c1a0e,#7c3f00);
         border-radius:16px; padding:20px 28px; margin-bottom:14px; color:white;
         display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
     }
@@ -43,33 +43,33 @@ def _render_lectura_historia(hrow):
     }
     .rx-table { width:100%; border-collapse:collapse; font-size:13px; }
     .rx-table th {
-        background:#1e3a8a; color:white; font-weight:700; font-size:11px;
+        background:#7c3f00; color:white; font-weight:700; font-size:11px;
         text-transform:uppercase; letter-spacing:.05em;
         padding:7px 10px; text-align:center;
     }
-    .rx-table th.rx-th-eye { background:#0f172a; text-align:left; width:110px; }
+    .rx-table th.rx-th-eye { background:#2c1a0e; text-align:left; width:110px; }
     .rx-table td {
         padding:8px 10px; text-align:center; font-family:monospace;
-        font-size:14px; font-weight:700; border-bottom:1px solid #e2e8f0;
-        color:#1e293b;
+        font-size:14px; font-weight:700; border-bottom:1px solid #e8d5b7;
+        color:#3b2a1a; background:#fffdf8;
     }
     .rx-table td.rx-eye-label {
         font-family:sans-serif; font-size:11px; font-weight:800;
         color:white; text-align:left; white-space:nowrap;
     }
-    .rx-table tr.rx-od td.rx-eye-label { background:#3b82f6; }
-    .rx-table tr.rx-oi td.rx-eye-label { background:#8b5cf6; }
+    .rx-table tr.rx-od td.rx-eye-label { background:#b45309; }
+    .rx-table tr.rx-oi td.rx-eye-label { background:#92400e; }
     .rx-table tr:last-child td { border-bottom:none; }
-    .rx-table td.rx-dash { color:#cbd5e1; font-weight:400; }
+    .rx-table td.rx-dash { color:#d4b896; font-weight:400; }
     .hc2-pill {
         display:inline-flex; align-items:center; gap:5px;
         padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700;
     }
-    .hc2-pill-blue   { background:#dbeafe; color:#1d4ed8; }
-    .hc2-pill-green  { background:#dcfce7; color:#15803d; }
+    .hc2-pill-blue   { background:#fef3c7; color:#92400e; }
+    .hc2-pill-green  { background:#fdf6ee; color:#7c3f00; border:1px solid #d4a96a; }
     .hc2-pill-red    { background:#fee2e2; color:#dc2626; }
     .hc2-pill-amber  { background:#fef3c7; color:#92400e; }
-    .hc2-pill-purple { background:#ede9fe; color:#6d28d9; }
+    .hc2-pill-purple { background:#f5e6cc; color:#7c3f00; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -137,28 +137,28 @@ def _render_lectura_historia(hrow):
     avl_oi_cls = 'rx-dash' if li_avl == '—' else ''
 
     st.markdown(f"""
-    <div class="hc2-section" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #bfdbfe">
-        <div class="hc2-section-title" style="color:#1d4ed8">🔍 Lensometría &nbsp;·&nbsp; Rx en Uso &nbsp;·&nbsp; Agudeza Visual S/C</div>
+    <div class="hc2-section" style="background:linear-gradient(135deg,#fdf6ee,#f5e6cc);border:1px solid #d4a96a">
+        <div class="hc2-section-title" style="color:#7c3f00">🔍 Lensometría &nbsp;·&nbsp; Rx en Uso &nbsp;·&nbsp; Agudeza Visual S/C</div>
         <table class="rx-table">
             <thead>
                 <tr>
                     <th class="rx-th-eye">Ojo</th>
                     <th>ESF</th><th>CYL</th><th>EJE</th><th>ADD</th>
-                    <th style="border-left:2px solid #3b82f6">AV Lejos</th>
+                    <th style="border-left:2px solid #b45309">AV Lejos</th>
                     <th>AV Cerca</th>
                 </tr>
             </thead>
             <tbody>
                 <tr class="rx-od">
-                    <td class="rx-eye-label">🔵 OD &nbsp;Derecho</td>
+                    <td class="rx-eye-label">🟠 OD &nbsp;Derecho</td>
                     {_c(lo_esf)}{_c(lo_cyl)}{_c(lo_eje)}{_c(lo_add)}
-                    <td style="border-left:2px solid #3b82f6" class="{avl_od_cls}">{lo_avl}</td>
+                    <td style="border-left:2px solid #b45309" class="{avl_od_cls}">{lo_avl}</td>
                     {_c(lo_avc)}
                 </tr>
                 <tr class="rx-oi">
-                    <td class="rx-eye-label">🟣 OI &nbsp;Izquierdo</td>
+                    <td class="rx-eye-label">🟤 OI &nbsp;Izquierdo</td>
                     {_c(li_esf)}{_c(li_cyl)}{_c(li_eje)}{_c(li_add)}
-                    <td style="border-left:2px solid #3b82f6" class="{avl_oi_cls}">{li_avl}</td>
+                    <td style="border-left:2px solid #b45309" class="{avl_oi_cls}">{li_avl}</td>
                     {_c(li_avc)}
                 </tr>
             </tbody>
@@ -180,34 +180,34 @@ def _render_lectura_historia(hrow):
     ri_avl_cls = 'rx-dash' if ri_avl == '—' else ''
 
     st.markdown(f"""
-    <div class="hc2-section" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #86efac">
-        <div class="hc2-section-title" style="color:#15803d">✨ Refracción Final &nbsp;·&nbsp; Rx Actual &nbsp;·&nbsp; Agudeza Visual C/C</div>
+    <div class="hc2-section" style="background:linear-gradient(135deg,#faf5eb,#f0e8d0);border:1px solid #c9a96e">
+        <div class="hc2-section-title" style="color:#7c3f00">✨ Refracción Final &nbsp;·&nbsp; Rx Actual &nbsp;·&nbsp; Agudeza Visual C/C</div>
         <table class="rx-table">
             <thead>
                 <tr>
                     <th class="rx-th-eye">Ojo</th>
                     <th>ESF</th><th>CYL</th><th>EJE</th><th>ADD</th>
-                    <th style="border-left:2px solid #22c55e">DNP</th>
+                    <th style="border-left:2px solid #92400e">DNP</th>
                     <th>ALT</th><th>DP</th><th>A/V</th>
-                    <th style="border-left:2px solid #22c55e">AV Lejos</th>
+                    <th style="border-left:2px solid #92400e">AV Lejos</th>
                     <th>AV Cerca</th>
                 </tr>
             </thead>
             <tbody>
                 <tr class="rx-od">
-                    <td class="rx-eye-label">🔵 OD &nbsp;Derecho</td>
+                    <td class="rx-eye-label">🟠 OD &nbsp;Derecho</td>
                     {_c(ro_esf)}{_c(ro_cyl)}{_c(ro_eje)}{_c(ro_add)}
-                    <td style="border-left:2px solid #22c55e" class="{ro_dnp_cls}">{ro_dnp}</td>
+                    <td style="border-left:2px solid #92400e" class="{ro_dnp_cls}">{ro_dnp}</td>
                     {_c(ro_alt)}{_c(ro_dp)}{_c(ro_av)}
-                    <td style="border-left:2px solid #22c55e" class="{ro_avl_cls}">{ro_avl}</td>
+                    <td style="border-left:2px solid #92400e" class="{ro_avl_cls}">{ro_avl}</td>
                     {_c(ro_avc)}
                 </tr>
                 <tr class="rx-oi">
-                    <td class="rx-eye-label">🟣 OI &nbsp;Izquierdo</td>
+                    <td class="rx-eye-label">🟤 OI &nbsp;Izquierdo</td>
                     {_c(ri_esf)}{_c(ri_cyl)}{_c(ri_eje)}{_c(ri_add)}
-                    <td style="border-left:2px solid #22c55e" class="{ri_dnp_cls}">{ri_dnp}</td>
+                    <td style="border-left:2px solid #92400e" class="{ri_dnp_cls}">{ri_dnp}</td>
                     {_c(ri_alt)}{_c(ri_dp)}{_c(ri_av)}
-                    <td style="border-left:2px solid #22c55e" class="{ri_avl_cls}">{ri_avl}</td>
+                    <td style="border-left:2px solid #92400e" class="{ri_avl_cls}">{ri_avl}</td>
                     {_c(ri_avc)}
                 </tr>
             </tbody>
