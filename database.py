@@ -264,16 +264,19 @@ def cerrar_caja(caja_id: int, data: dict):
         registrar_auditoria("Cierre de Caja", "Contabilidad", f"Cierre final: ${data['monto_cierre']}", data['cerrada_por'], sucursal=data['sucursal'])
     except Exception as e: print(f"Error cerrar_caja: {e}")
 
-def actualizar_historia(historia_id: int, data: dict):
+def actualizar_historia(historia_id, data: dict):
     """Actualiza campos de una historia clínica en Supabase."""
     try:
         if not supabase: return
-        supabase.table("historias").update(data).eq("id", historia_id).execute()
+        supabase.table("historias_clinicas").update(data).eq("id", historia_id).execute()
         try:
             cargar_historias.clear()
         except:
             pass
-        registrar_auditoria("Actualizar Historia", "Clínica", f"ID Historia: {historia_id}", st.session_state.user_login, sucursal=st.session_state.get("sucursal_activa", ""))
+        try:
+            import streamlit as st
+            registrar_auditoria("Actualizar Historia", "Clínica", f"ID Historia: {historia_id}", st.session_state.get("user_login", "desconocido"), sucursal=st.session_state.get("sucursal_activa", ""))
+        except: pass
     except Exception as e: print(f"Error actualizar_historia: {e}")
 
 def registrar_venta_directa(data: dict):
@@ -432,7 +435,8 @@ HISTORIAS_COLS = [
     "rx_oi", "rx_av_lej_oi", "rx_av_cer_oi",
     "estado_muscular", "seg_externo", "test_colores", "estado_refractivo",
     "diagnostico", "disposicion", "recomendaciones",
-    "meses_proximo_control", "necesita_lentes", "test_color", "sucursal"
+    "meses_proximo_control", "necesita_lentes", "test_color", "sucursal",
+    "optometrista", "optometrista_login"
 ]
 
 def migrar_estructuras():
@@ -463,7 +467,9 @@ def migrar_estructuras():
             # Limpiar sucursales vacías que pudieran haber quedado
             df_h.loc[df_h['sucursal'] == '', 'sucursal'] = 'Matriz'
             df_h.loc[df_h['sucursal'].isna(), 'sucursal'] = 'Matriz'
-            st.session_state.df_historias = df_h[HISTORIAS_COLS]
+            # Solo mantener columnas que existen (no eliminar columnas extra del DataFrame)
+            cols_presentes = [c for c in HISTORIAS_COLS if c in df_h.columns]
+            st.session_state.df_historias = df_h[cols_presentes]
             
         # 3. Migrar Usuarios (Nuevos Permisos)
         try:

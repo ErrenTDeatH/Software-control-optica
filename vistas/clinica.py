@@ -914,7 +914,6 @@ def render_clinica():
             ant_col1, ant_col2 = st.columns(2)
             c_ant_per = ant_col1.text_input("Antecedentes Personales", placeholder="Ej: Diabetes, cirugias...")
             c_ant_fam = ant_col2.text_input("Antecedentes Familiares", placeholder="Ej: Glaucoma familiar...")
-            c_obs     = st.text_area("Observaciones adicionales", height=60)
 
             st.markdown("**(2) Agudezas Visuales**")
             ac1, ac2, ac3, ac4, ac5, ac6 = st.columns([1,2,2,1,2,2])
@@ -1025,7 +1024,8 @@ def render_clinica():
             c_proximo_control  = dcol3.date_input("Proximo control", value=date.today() + _td(days=365))
 
             c_obs = st.text_area("Observaciones / Recomendaciones (Opcional)", placeholder="Escribe observaciones adicionales...")
-            c_ant_per, c_ant_fam, c_diab, c_hiper, c_otra = "", "", "NO", "NO", ""
+            # Campos internos sin UI (valores por defecto para campos legacy)
+            c_diab, c_hiper, c_otra = "NO", "NO", ""
             c_est_mus, c_seg_ext, c_test_col, c_est_ref, c_disp, c_recom = "", "", "", "", "", ""
 
             fcols = st.columns([2, 1])
