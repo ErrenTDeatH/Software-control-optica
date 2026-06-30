@@ -19,52 +19,82 @@ def _render_lectura_historia(hrow):
     lenso_od = hrow.get('lenso_od')
     lenso_oi = hrow.get('lenso_oi')
 
-    st.markdown(f"""
+    st.markdown("""
     <style>
-    .hc-card {{ background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px 20px; margin-bottom:12px; }}
-    .hc-card-blue {{ background:linear-gradient(135deg,#eff6ff,#dbeafe); border:1px solid #bfdbfe; border-radius:12px; padding:16px 20px; margin-bottom:12px; }}
-    .hc-card-green {{ background:linear-gradient(135deg,#f0fdf4,#dcfce7); border:1px solid #86efac; border-radius:12px; padding:16px 20px; margin-bottom:12px; }}
-    .hc-card-amber {{ background:linear-gradient(135deg,#fffbeb,#fef3c7); border:1px solid #fcd34d; border-radius:12px; padding:16px 20px; margin-bottom:12px; }}
-    .hc-section-title {{ font-size:13px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px; }}
-    .hc-label {{ font-size:11px; color:#94a3b8; font-weight:600; text-transform:uppercase; letter-spacing:.05em; margin-bottom:2px; }}
-    .hc-value {{ font-size:15px; color:#1e293b; font-weight:600; margin-bottom:0; }}
-    .hc-value-mono {{ font-family:monospace; font-size:14px; color:#1e40af; font-weight:700; }}
-    .hc-eye-header {{ font-size:12px; font-weight:800; color:#fff; padding:3px 10px; border-radius:20px; display:inline-block; margin-bottom:8px; }}
-    .hc-od {{ background:#3b82f6; }}
-    .hc-oi {{ background:#8b5cf6; }}
-    .hc-grid {{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }}
-    .hc-grid-3 {{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }}
-    .hc-rx-block {{ background:white; border-radius:8px; padding:12px; border:1px solid #e2e8f0; }}
-    .hc-rx-row {{ display:flex; justify-content:space-between; align-items:center; padding:3px 0; border-bottom:1px solid #f1f5f9; }}
-    .hc-rx-row:last-child {{ border-bottom:none; }}
-    .hc-rx-key {{ font-size:11px; color:#64748b; font-weight:600; }}
-    .hc-rx-val {{ font-size:13px; color:#0f172a; font-weight:700; font-family:monospace; }}
-    .hc-badge {{ display:inline-block; padding:2px 10px; border-radius:20px; font-size:12px; font-weight:600; }}
-    .hc-badge-blue {{ background:#dbeafe; color:#1d4ed8; }}
-    .hc-badge-green {{ background:#dcfce7; color:#15803d; }}
-    .hc-badge-red {{ background:#fee2e2; color:#dc2626; }}
+    .hc-card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px 20px; margin-bottom:12px; }
+    .hc-card-blue { background:linear-gradient(135deg,#eff6ff,#dbeafe); border:1px solid #bfdbfe; border-radius:12px; padding:16px 20px; margin-bottom:12px; }
+    .hc-card-green { background:linear-gradient(135deg,#f0fdf4,#dcfce7); border:1px solid #86efac; border-radius:12px; padding:16px 20px; margin-bottom:12px; }
+    .hc-card-amber { background:linear-gradient(135deg,#fffbeb,#fef3c7); border:1px solid #fcd34d; border-radius:12px; padding:16px 20px; margin-bottom:12px; }
+    .hc-section-title { font-size:13px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px; }
+    .hc-label { font-size:11px; color:#94a3b8; font-weight:600; text-transform:uppercase; letter-spacing:.05em; margin-bottom:2px; }
+    .hc-value { font-size:15px; color:#1e293b; font-weight:600; margin-bottom:0; }
+    .hc-value-mono { font-family:monospace; font-size:14px; color:#1e40af; font-weight:700; }
+    .hc2-header {
+        background: linear-gradient(135deg,#0f172a,#1e3a8a);
+        border-radius:16px; padding:20px 28px; margin-bottom:14px; color:white;
+        display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+    }
+    .hc2-section {
+        border-radius:12px; padding:14px 18px; margin-bottom:12px;
+    }
+    .hc2-section-title {
+        font-size:12px; font-weight:800; text-transform:uppercase;
+        letter-spacing:.07em; margin-bottom:10px; display:flex; align-items:center; gap:6px;
+    }
+    .rx-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .rx-table th {
+        background:#1e3a8a; color:white; font-weight:700; font-size:11px;
+        text-transform:uppercase; letter-spacing:.05em;
+        padding:7px 10px; text-align:center;
+    }
+    .rx-table th.rx-th-eye { background:#0f172a; text-align:left; width:110px; }
+    .rx-table td {
+        padding:8px 10px; text-align:center; font-family:monospace;
+        font-size:14px; font-weight:700; border-bottom:1px solid #e2e8f0;
+        color:#1e293b;
+    }
+    .rx-table td.rx-eye-label {
+        font-family:sans-serif; font-size:11px; font-weight:800;
+        color:white; text-align:left; white-space:nowrap;
+    }
+    .rx-table tr.rx-od td.rx-eye-label { background:#3b82f6; }
+    .rx-table tr.rx-oi td.rx-eye-label { background:#8b5cf6; }
+    .rx-table tr:last-child td { border-bottom:none; }
+    .rx-table td.rx-dash { color:#cbd5e1; font-weight:400; }
+    .hc2-pill {
+        display:inline-flex; align-items:center; gap:5px;
+        padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700;
+    }
+    .hc2-pill-blue   { background:#dbeafe; color:#1d4ed8; }
+    .hc2-pill-green  { background:#dcfce7; color:#15803d; }
+    .hc2-pill-red    { background:#fee2e2; color:#dc2626; }
+    .hc2-pill-amber  { background:#fef3c7; color:#92400e; }
+    .hc2-pill-purple { background:#ede9fe; color:#6d28d9; }
     </style>
     """, unsafe_allow_html=True)
 
-    # ─── ENCABEZADO PRINCIPAL ─────────────────────────────────
-    fecha = _val(hrow.get('fecha'))
+
+
+    # ─── ENCABEZADO ───────────────────────────────────────────
+    fecha  = _val(hrow.get('fecha'))
     motivo = _val(hrow.get('motivo'))
-    diag = _val(hrow.get('diagnostico'))
-    opto = _val(hrow.get('optometrista'))
+    diag   = _val(hrow.get('diagnostico'))
+    opto   = _val(hrow.get('optometrista'))
+    diag_short = diag[:60] + "…" if len(diag) > 60 else diag
 
     st.markdown(f"""
-    <div style="background:linear-gradient(135deg,#0f172a,#1e3a8a); border-radius:14px; padding:18px 24px; margin-bottom:16px; color:white;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
-            <div>
-                <div style="font-size:11px; color:#93c5fd; letter-spacing:.08em; text-transform:uppercase; font-weight:600;">Historia Clínica Optométrica</div>
-                <div style="font-size:20px; font-weight:800; margin-top:4px;">📋 {motivo}</div>
-                <div style="font-size:13px; color:#bfdbfe; margin-top:6px;">👨‍⚕️ Atendido por: <b>{opto}</b></div>
+    <div class="hc2-header">
+        <div>
+            <div style="font-size:10px;color:#93c5fd;letter-spacing:.1em;text-transform:uppercase;font-weight:700">
+                Historia Clínica Optométrica
             </div>
-            <div style="text-align:right;">
-                <div style="font-size:11px; color:#93c5fd;">Fecha de consulta</div>
-                <div style="font-size:18px; font-weight:700;">📅 {fecha}</div>
-                <div style="margin-top:8px;"><span class="hc-badge hc-badge-green">✅ {diag}</span></div>
-            </div>
+            <div style="font-size:19px;font-weight:800;margin-top:3px">📋 {motivo}</div>
+            <div style="font-size:12px;color:#bfdbfe;margin-top:6px">👨‍⚕️ <b>{opto}</b></div>
+        </div>
+        <div style="text-align:right">
+            <div style="font-size:11px;color:#93c5fd">Fecha de consulta</div>
+            <div style="font-size:20px;font-weight:800;letter-spacing:-.5px">📅 {fecha}</div>
+            <div style="margin-top:8px"><span class="hc2-pill hc2-pill-green">✅ {diag_short}</span></div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -72,115 +102,153 @@ def _render_lectura_historia(hrow):
     # ─── ANTECEDENTES ─────────────────────────────────────────
     ant_p = _val(hrow.get('ant_personales'))
     ant_f = _val(hrow.get('ant_familiares'))
+
     st.markdown(f"""
-    <div class="hc-card">
-        <div class="hc-section-title">👤 Antecedentes</div>
-        <div class="hc-grid">
+    <div class="hc2-section" style="background:#f8fafc;border:1px solid #e2e8f0">
+        <div class="hc2-section-title" style="color:#475569">👤 Antecedentes</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
             <div>
-                <div class="hc-label">Personales</div>
-                <div class="hc-value">{ant_p}</div>
+                <div style="font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Personales</div>
+                <div style="font-size:14px;color:#1e293b;font-weight:600">{ant_p}</div>
             </div>
             <div>
-                <div class="hc-label">Familiares</div>
-                <div class="hc-value">{ant_f}</div>
+                <div style="font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Familiares</div>
+                <div style="font-size:14px;color:#1e293b;font-weight:600">{ant_f}</div>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+    # ─── HELPER: celda tabla ──────────────────────────────────
+    def _c(v):
+        val = v if v and str(v).strip() and str(v) not in ("—", "nan", "None", "") else "—"
+        cls = "rx-dash" if val == "—" else ""
+        return f'<td class="{cls}">{val}</td>'
 
     # ─── LENSOMETRÍA ──────────────────────────────────────────
-    def rx_block_html(label, color_cls, esf, cyl, eje, add, av_lej, av_cer):
-        return f"""
-        <div class="hc-rx-block">
-            <span class="hc-eye-header {color_cls}">{label}</span>
-            <div class="hc-rx-row"><span class="hc-rx-key">ESF</span><span class="hc-rx-val">{esf}</span></div>
-            <div class="hc-rx-row"><span class="hc-rx-key">CYL</span><span class="hc-rx-val">{cyl}</span></div>
-            <div class="hc-rx-row"><span class="hc-rx-key">EJE</span><span class="hc-rx-val">{eje}°</span></div>
-            <div class="hc-rx-row"><span class="hc-rx-key">ADD</span><span class="hc-rx-val">{add}</span></div>
-            <div class="hc-rx-row"><span class="hc-rx-key">AV Lejos</span><span class="hc-rx-val">{av_lej}</span></div>
-            <div class="hc-rx-row"><span class="hc-rx-key">AV Cerca</span><span class="hc-rx-val">{av_cer}</span></div>
-        </div>"""
+    lo_esf = _p(lenso_od,0); lo_cyl = _p(lenso_od,1)
+    lo_eje = _p(lenso_od,2); lo_add = _p(lenso_od,3)
+    li_esf = _p(lenso_oi,0); li_cyl = _p(lenso_oi,1)
+    li_eje = _p(lenso_oi,2); li_add = _p(lenso_oi,3)
+    lo_avl = _val(hrow.get('lenso_av_lej_od')); lo_avc = _val(hrow.get('lenso_av_cer_od'))
+    li_avl = _val(hrow.get('lenso_av_lej_oi')); li_avc = _val(hrow.get('lenso_av_cer_oi'))
 
-    od_html = rx_block_html("OD — Ojo Derecho", "hc-od",
-        _p(lenso_od,0), _p(lenso_od,1), _p(lenso_od,2), _p(lenso_od,3),
-        _val(hrow.get('lenso_av_lej_od')), _val(hrow.get('lenso_av_cer_od')))
-    oi_html = rx_block_html("OI — Ojo Izquierdo", "hc-oi",
-        _p(lenso_oi,0), _p(lenso_oi,1), _p(lenso_oi,2), _p(lenso_oi,3),
-        _val(hrow.get('lenso_av_lej_oi')), _val(hrow.get('lenso_av_cer_oi')))
+    avl_od_cls = 'rx-dash' if lo_avl == '—' else ''
+    avl_oi_cls = 'rx-dash' if li_avl == '—' else ''
 
     st.markdown(f"""
-    <div class="hc-card-blue">
-        <div class="hc-section-title">🔍 Lensometría (Rx en Uso) · Agudeza Visual S/C</div>
-        <div class="hc-grid">{od_html}{oi_html}</div>
+    <div class="hc2-section" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #bfdbfe">
+        <div class="hc2-section-title" style="color:#1d4ed8">🔍 Lensometría &nbsp;·&nbsp; Rx en Uso &nbsp;·&nbsp; Agudeza Visual S/C</div>
+        <table class="rx-table">
+            <thead>
+                <tr>
+                    <th class="rx-th-eye">Ojo</th>
+                    <th>ESF</th><th>CYL</th><th>EJE</th><th>ADD</th>
+                    <th style="border-left:2px solid #3b82f6">AV Lejos</th>
+                    <th>AV Cerca</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="rx-od">
+                    <td class="rx-eye-label">🔵 OD &nbsp;Derecho</td>
+                    {_c(lo_esf)}{_c(lo_cyl)}{_c(lo_eje)}{_c(lo_add)}
+                    <td style="border-left:2px solid #3b82f6" class="{avl_od_cls}">{lo_avl}</td>
+                    {_c(lo_avc)}
+                </tr>
+                <tr class="rx-oi">
+                    <td class="rx-eye-label">🟣 OI &nbsp;Izquierdo</td>
+                    {_c(li_esf)}{_c(li_cyl)}{_c(li_eje)}{_c(li_add)}
+                    <td style="border-left:2px solid #3b82f6" class="{avl_oi_cls}">{li_avl}</td>
+                    {_c(li_avc)}
+                </tr>
+            </tbody>
+        </table>
     </div>
     """, unsafe_allow_html=True)
 
-    # ─── REFRACCIÓN ───────────────────────────────────────────
-    def rx_full_block_html(label, color_cls, esf, cyl, eje, add, dnp, alt, dp, av, av_lej, av_cer):
-        return f"""
-        <div class="hc-rx-block">
-            <span class="hc-eye-header {color_cls}">{label}</span>
-            <div class="hc-rx-row"><span class="hc-rx-key">ESF</span><span class="hc-rx-val">{esf}</span></div>
-            <div class="hc-rx-row"><span class="hc-rx-key">CYL</span><span class="hc-rx-val">{cyl}</span></div>
-            <div class="hc-rx-row"><span class="hc-rx-key">EJE</span><span class="hc-rx-val">{eje}°</span></div>
-            <div class="hc-rx-row"><span class="hc-rx-key">ADD</span><span class="hc-rx-val">{add}</span></div>
-            <div class="hc-rx-row"><span class="hc-rx-key">DNP</span><span class="hc-rx-val">{dnp}</span></div>
-            <div class="hc-rx-row"><span class="hc-rx-key">ALT</span><span class="hc-rx-val">{alt}</span></div>
-            <div class="hc-rx-row"><span class="hc-rx-key">DP</span><span class="hc-rx-val">{dp}</span></div>
-            <div class="hc-rx-row"><span class="hc-rx-key">A/V</span><span class="hc-rx-val">{av}</span></div>
-            <div class="hc-rx-row"><span class="hc-rx-key">AV Lejos</span><span class="hc-rx-val">{av_lej}</span></div>
-            <div class="hc-rx-row"><span class="hc-rx-key">AV Cerca</span><span class="hc-rx-val">{av_cer}</span></div>
-        </div>"""
+    # ─── REFRACCIÓN FINAL ─────────────────────────────────────
+    ro_esf = _p(rx_od,0); ro_cyl = _p(rx_od,1); ro_eje = _p(rx_od,2); ro_add = _p(rx_od,3)
+    ro_dnp = _p(rx_od,4); ro_alt = _p(rx_od,5); ro_dp  = _p(rx_od,6); ro_av  = _p(rx_od,7)
+    ri_esf = _p(rx_oi,0); ri_cyl = _p(rx_oi,1); ri_eje = _p(rx_oi,2); ri_add = _p(rx_oi,3)
+    ri_dnp = _p(rx_oi,4); ri_alt = _p(rx_oi,5); ri_dp  = _p(rx_oi,6); ri_av  = _p(rx_oi,7)
+    ro_avl = _val(hrow.get('rx_av_lej_od')); ro_avc = _val(hrow.get('rx_av_cer_od'))
+    ri_avl = _val(hrow.get('rx_av_lej_oi')); ri_avc = _val(hrow.get('rx_av_cer_oi'))
 
-    od_rx_html = rx_full_block_html("OD — Ojo Derecho", "hc-od",
-        _p(rx_od,0), _p(rx_od,1), _p(rx_od,2), _p(rx_od,3),
-        _p(rx_od,4), _p(rx_od,5), _p(rx_od,6), _p(rx_od,7),
-        _val(hrow.get('rx_av_lej_od')), _val(hrow.get('rx_av_cer_od')))
-    oi_rx_html = rx_full_block_html("OI — Ojo Izquierdo", "hc-oi",
-        _p(rx_oi,0), _p(rx_oi,1), _p(rx_oi,2), _p(rx_oi,3),
-        _p(rx_oi,4), _p(rx_oi,5), _p(rx_oi,6), _p(rx_oi,7),
-        _val(hrow.get('rx_av_lej_oi')), _val(hrow.get('rx_av_cer_oi')))
+    ro_dnp_cls = 'rx-dash' if ro_dnp == '—' else ''
+    ri_dnp_cls = 'rx-dash' if ri_dnp == '—' else ''
+    ro_avl_cls = 'rx-dash' if ro_avl == '—' else ''
+    ri_avl_cls = 'rx-dash' if ri_avl == '—' else ''
 
     st.markdown(f"""
-    <div class="hc-card-green">
-        <div class="hc-section-title">✨ Refracción Final (Rx Actual) · Agudeza Visual C/C</div>
-        <div class="hc-grid">{od_rx_html}{oi_rx_html}</div>
+    <div class="hc2-section" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #86efac">
+        <div class="hc2-section-title" style="color:#15803d">✨ Refracción Final &nbsp;·&nbsp; Rx Actual &nbsp;·&nbsp; Agudeza Visual C/C</div>
+        <table class="rx-table">
+            <thead>
+                <tr>
+                    <th class="rx-th-eye">Ojo</th>
+                    <th>ESF</th><th>CYL</th><th>EJE</th><th>ADD</th>
+                    <th style="border-left:2px solid #22c55e">DNP</th>
+                    <th>ALT</th><th>DP</th><th>A/V</th>
+                    <th style="border-left:2px solid #22c55e">AV Lejos</th>
+                    <th>AV Cerca</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="rx-od">
+                    <td class="rx-eye-label">🔵 OD &nbsp;Derecho</td>
+                    {_c(ro_esf)}{_c(ro_cyl)}{_c(ro_eje)}{_c(ro_add)}
+                    <td style="border-left:2px solid #22c55e" class="{ro_dnp_cls}">{ro_dnp}</td>
+                    {_c(ro_alt)}{_c(ro_dp)}{_c(ro_av)}
+                    <td style="border-left:2px solid #22c55e" class="{ro_avl_cls}">{ro_avl}</td>
+                    {_c(ro_avc)}
+                </tr>
+                <tr class="rx-oi">
+                    <td class="rx-eye-label">🟣 OI &nbsp;Izquierdo</td>
+                    {_c(ri_esf)}{_c(ri_cyl)}{_c(ri_eje)}{_c(ri_add)}
+                    <td style="border-left:2px solid #22c55e" class="{ri_dnp_cls}">{ri_dnp}</td>
+                    {_c(ri_alt)}{_c(ri_dp)}{_c(ri_av)}
+                    <td style="border-left:2px solid #22c55e" class="{ri_avl_cls}">{ri_avl}</td>
+                    {_c(ri_avc)}
+                </tr>
+            </tbody>
+        </table>
     </div>
     """, unsafe_allow_html=True)
 
-    # ─── DATOS ADICIONALES ────────────────────────────────────
+    # ─── RESUMEN CLÍNICO (PILLS) ──────────────────────────────
     necesita = _val(hrow.get('necesita_lentes'))
-    color_t = _val(hrow.get('test_color'))
-    proximo = _val(hrow.get('meses_proximo_control'))
-    obs = _val(hrow.get('observaciones'))
-    rec = _val(hrow.get('recomendaciones'))
+    color_t  = _val(hrow.get('test_color'))
+    proximo  = _val(hrow.get('meses_proximo_control'))
+    obs      = _val(hrow.get('observaciones'))
+    rec      = _val(hrow.get('recomendaciones'))
+
+    lentes_pill = '<span class="hc2-pill hc2-pill-blue">👓 Sí, necesita lentes</span>' \
+        if necesita == "SI" else '<span class="hc2-pill hc2-pill-green">✅ No necesita lentes</span>'
+    color_pill  = '<span class="hc2-pill hc2-pill-red">⚠️ Daltonismo detectado</span>' \
+        if "dalton" in color_t.lower() else '<span class="hc2-pill hc2-pill-green">✅ Test de color normal</span>'
+    ctrl_pill   = f'<span class="hc2-pill hc2-pill-purple">📅 Próx. control: {proximo}</span>'
 
     st.markdown(f"""
-    <div class="hc-card">
-        <div class="hc-section-title">📊 Datos Adicionales</div>
-        <div class="hc-grid-3">
-            <div>
-                <div class="hc-label">👓 Necesita Lentes</div>
-                <div class="hc-value">{necesita}</div>
-            </div>
-            <div>
-                <div class="hc-label">🎨 Test de Color</div>
-                <div class="hc-value">{color_t}</div>
-            </div>
-            <div>
-                <div class="hc-label">📅 Próx. Control</div>
-                <div class="hc-value">{proximo} meses</div>
-            </div>
+    <div class="hc2-section" style="background:#f8fafc;border:1px solid #e2e8f0">
+        <div class="hc2-section-title" style="color:#475569">📊 Resumen Clínico</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+            {lentes_pill} {color_pill} {ctrl_pill}
         </div>
     </div>
-    <div class="hc-card-amber">
-        <div class="hc-section-title">📝 Observaciones y Recomendaciones</div>
-        <div class="hc-label" style="margin-bottom:4px;">Observaciones</div>
-        <div class="hc-value" style="margin-bottom:12px;">{obs}</div>
-        <div class="hc-label" style="margin-bottom:4px;">💡 Indicaciones al Paciente</div>
-        <div class="hc-value">{rec}</div>
-    </div>
     """, unsafe_allow_html=True)
+
+    # ─── OBSERVACIONES Y RECOMENDACIONES ─────────────────────
+    if obs != "—" or rec != "—":
+        obs_label = '<div style="font-size:10px;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Observaciones</div>' if obs != "—" else ""
+        obs_html  = f'<div style="font-size:14px;color:#1e293b;line-height:1.6;margin-bottom:12px">{obs}</div>' if obs != "—" else ""
+        rec_label = '<div style="font-size:10px;color:#92400e;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">💡 Indicaciones al Paciente</div>' if rec != "—" else ""
+        rec_html  = f'<div style="font-size:14px;color:#78350f;line-height:1.6">{rec}</div>' if rec != "—" else ""
+        st.markdown(f"""
+        <div class="hc2-section" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1px solid #fcd34d">
+            <div class="hc2-section-title" style="color:#92400e">📝 Observaciones y Recomendaciones</div>
+            {obs_label}{obs_html}{rec_label}{rec_html}
+        </div>
+        """, unsafe_allow_html=True)
 
 
 def render_clinica():
