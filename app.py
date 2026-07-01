@@ -786,14 +786,19 @@ with st.sidebar:
     # Filtrar dataframes para el resumen
     df_p_view = st.session_state.df_pacientes
     df_h_view = st.session_state.df_historias
+    _hlc_raw = st.session_state.get("df_historias_lc")
+    df_hlc_view = _hlc_raw if _hlc_raw is not None else pd.DataFrame()
     
     if "sucursal" in df_p_view.columns:
         df_p_view = df_p_view[df_p_view["sucursal"] == suc_actual]
     if "sucursal" in df_h_view.columns:
         df_h_view = df_h_view[df_h_view["sucursal"] == suc_actual]
+    if not df_hlc_view.empty and "sucursal" in df_hlc_view.columns:
+        df_hlc_view = df_hlc_view[df_hlc_view["sucursal"] == suc_actual]
         
     n_pacientes = len(df_p_view)
     n_historias = len(df_h_view)
+    n_hist_lc   = len(df_hlc_view)
     
     st.markdown(
         f"<p style='color:#475569; font-size:10px; text-transform:uppercase; letter-spacing:1.5px; margin:0 0 6px 0;'>Resumen ({suc_actual})</p>",
@@ -802,6 +807,9 @@ with st.sidebar:
     c1, c2 = st.columns(2)
     c1.metric("Pacientes", n_pacientes)
     c2.metric("Historias", n_historias)
+    
+    c3, c4 = st.columns(2)
+    c3.metric("Historias LC", n_hist_lc)
 
     st.markdown("<div class='fancy-divider'></div>", unsafe_allow_html=True)
     st.markdown(
