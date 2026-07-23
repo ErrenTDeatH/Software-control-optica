@@ -1,2 +1,0 @@
-pedidos = []
-estados_pedido = []

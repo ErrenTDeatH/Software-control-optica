@@ -1,9 +1,7 @@
-"""
-╔══════════════════════════════════════════════════════════════╗
-║         HAPPY VISION · SISTEMA DE GESTIÓN INTEGRAL          ║
-║         Contabilidad · Facturación · Inventario             ║
-╚══════════════════════════════════════════════════════════════╝
-"""
+# ╔══════════════════════════════════════════════════════════════╗
+# ║         HAPPY VISION · SISTEMA DE GESTIÓN INTEGRAL          ║
+# ║         Contabilidad · Facturación · Inventario             ║
+# ╚══════════════════════════════════════════════════════════════╝
 
 import streamlit as st
 import pandas as pd
@@ -11,6 +9,31 @@ import json
 import os
 from datetime import datetime
 import base64
+
+# ══════════════════════════════════════════════════════════════
+# CACHED FUNCTIONS FOR PERFORMANCE
+# ══════════════════════════════════════════════════════════════
+@st.cache_data(show_spinner=False)
+def get_base64_encoded_image(image_path: str) -> str:
+    """Reads a local image and returns it as a base64 encoded string, cached for speed."""
+    if not os.path.exists(image_path):
+        return ""
+    try:
+        with open(image_path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except Exception as e:
+        print(f"Error encoding image {image_path}: {e}")
+        return ""
+
+@st.cache_data(show_spinner=False)
+def get_logo_html(logo_path: str) -> str:
+    """Reads and creates HTML for logo using cached base64 representation."""
+    encoded = get_base64_encoded_image(logo_path)
+    if not encoded:
+        return ""
+    ext = logo_path.split('.')[-1].lower()
+    mime = "jpeg" if ext == "jpg" else ext
+    return f'<img src="data:image/{mime};base64,{encoded}" width="220"/>'
 
 # ── Utilidades y vistas ────────────────────────────────────────
 from utils import wa_link
@@ -22,9 +45,11 @@ from vistas.inventario import render_inventario
 from vistas.trabajos import render_trabajos
 from vistas.nueva_orden import render_nueva_orden
 from vistas.ventas import render_ventas
+from vistas.citas import render_citas
 from vistas.facturacion import render_facturacion
 from vistas.contabilidad import render_contabilidad
 from vistas.dashboard import render_dashboard
+# from vistas.ai_assistant import render_ai_assistant
 from database import cargar_sucursales
 
 
@@ -280,18 +305,14 @@ if not os.path.exists(_firma_dst) and os.path.exists(_firma_src):
 
 
 # ══════════════════════════════════════════════════════════════
-# SESSION STATE INIT
+# SESSION STATE INIT (LOCAL ONLY)
 # ══════════════════════════════════════════════════════════════
-if "initialized_v5" not in st.session_state:
-    from database import cargar_pacientes, cargar_historias, migrar_estructuras
-    st.session_state.df_pacientes = cargar_pacientes()
-    st.session_state.df_historias = cargar_historias()
-    migrar_estructuras()
+if "initialized_local" not in st.session_state:
+    st.session_state.df_pacientes = None
+    st.session_state.df_historias = None
+    st.session_state.df_historias_lc = None
+    st.session_state.initialized_db = False
     st.session_state.page = "Inicio"
-    st.session_state.initialized_v5 = True
-
-    pass
-
 
     # Perfil del optometrista
     if os.path.exists("optometrista.json"):
@@ -312,14 +333,12 @@ if "initialized_v5" not in st.session_state:
         st.session_state.opto_direccion = "Happy Vision"
         st.session_state.opto_telefono  = "+593 96 324 1158"
 
-    st.session_state.initialized_v4 = True
+    st.session_state.initialized_local = True
 
 
 # ══════════════════════════════════════════════════════════════
 # SISTEMA DE LOGIN Y ROLES
 # ══════════════════════════════════════════════════════════════
-USUARIOS = _cargar_usuarios()
-
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_role = ""
@@ -330,11 +349,10 @@ if not st.session_state.logged_in:
     bg_img_path = "login_bg.png"
     bg_style = ""
     if os.path.exists(bg_img_path):
-        try:
-            with open(bg_img_path, "rb") as f:
-                bin_str = base64.b64encode(f.read()).decode()
+        bin_str = get_base64_encoded_image(bg_img_path)
+        if bin_str:
             bg_style = f"background-image: url('data:image/png;base64,{bin_str}');"
-        except Exception:
+        else:
             bg_style = "background: linear-gradient(135deg, #ff0000 0%, #770000 100%);" # TEST ROJO
     else:
         bg_style = "background: linear-gradient(135deg, #ff0000 0%, #770000 100%);" # TEST ROJO
@@ -496,15 +514,22 @@ if not st.session_state.logged_in:
         st.markdown('<div class="login-wrapper">', unsafe_allow_html=True)
         
         # Carga de Logo en Base64 para inyección HTML
-        logo_b64 = ""
+        logo_html = ""
+        # 1. Intentar leer el logo local para máxima confiabilidad
         logo_path = "logo.png" if os.path.exists("logo.png") else ("logo.jpg" if os.path.exists("logo.jpg") else None)
+        
         if logo_path:
             try:
-                with open(logo_path, "rb") as f:
-                    logo_b64 = base64.b64encode(f.read()).decode()
-            except Exception: pass
-
-        logo_html = f'<img src="data:image/png;base64,{logo_b64}" width="220">' if logo_b64 else ""
+                logo_html = get_logo_html(logo_path)
+            except Exception:
+                pass
+                
+        # 2. Si no hay logo local, intentar desde Supabase o Caché
+        if not logo_html:
+            from supabase_client import public_url
+            logo_url = st.session_state.get('logo_url') or public_url("logos/logo.png")
+            if logo_url:
+                logo_html = f'<img src="{logo_url}" width="220"/>'
 
         st.markdown(f"""
             <div class="glass-card">
@@ -641,22 +666,78 @@ if st.session_state.get("logged_in") and not st.session_state.get("sucursal_acti
 
 
 # ══════════════════════════════════════════════════════════════
+# CARGA DE BASE DE DATOS DIFERIDA
+# ══════════════════════════════════════════════════════════════
+if not st.session_state.get("initialized_db"):
+    st.cache_data.clear()
+    with st.spinner("Cargando base de datos de pacientes e historias..."):
+        from database import cargar_pacientes, cargar_historias, cargar_historias_lc, migrar_estructuras
+        st.session_state.df_pacientes = cargar_pacientes()
+        st.session_state.df_historias = cargar_historias()
+        st.session_state.df_historias_lc = cargar_historias_lc()
+        migrar_estructuras()
+        st.session_state.initialized_db = True
+
+
+
+# ══════════════════════════════════════════════════════════════
 # SIDEBAR
 # ══════════════════════════════════════════════════════════════
 with st.sidebar:
-    if os.path.exists("logo.png") or os.path.exists("logo.jpg"):
-        logo_path = "logo.png" if os.path.exists("logo.png") else "logo.jpg"
+    if 'show_logo_uploader' not in st.session_state:
+        st.session_state.show_logo_uploader = False
+
+    logo_path_local = "logo.png" if os.path.exists("logo.png") else ("logo.jpg" if os.path.exists("logo.jpg") else None)
+    logo_to_show = st.session_state.get('logo_url') or logo_path_local
+    
+    if not logo_to_show:
+        from supabase_client import public_url
+        logo_to_show = public_url("logos/logo.png")
+        if logo_to_show:
+            st.session_state.logo_url = logo_to_show
+
+    if logo_to_show:
         st.markdown("<style>[data-testid='stSidebar'] img { filter: brightness(0); padding-bottom: 0px !important; margin-top: -55px !important; }</style>", unsafe_allow_html=True)
-        st.image(logo_path, use_container_width=True)
+        st.image(logo_to_show, use_container_width=True)
+        
+        # Botón de edición debajo del logo (Solo Administrador)
+        if st.session_state.get("user_role") == "Administrador":
+            col1, col2, col3 = st.columns([1, 4, 1])
+            with col2:
+                if st.button("✏️ Editar logo", use_container_width=True, help="Haz clic para cambiar el logo"):
+                    st.session_state.show_logo_uploader = not st.session_state.show_logo_uploader
+                    st.rerun()
     else:
+        if st.session_state.get("user_role") == "Administrador":
+            st.session_state.show_logo_uploader = True
         st.markdown("""
         <div class="logo-container">
             <p class="logo-hint">📌 Esperando el logo...</p>
-            <p style="color:#475569; font-size:12px; margin-top:8px;">
-               Guárdalo como <strong>logo.png</strong> en la carpeta del proyecto.
-            </p>
+            <p style='color:#475569; font-size:12px; margin-top:8px;'>Sube un logo para comenzar.</p>
         </div>
         """, unsafe_allow_html=True)
+
+    if st.session_state.show_logo_uploader and st.session_state.get("user_role") == "Administrador":
+        uploaded_file = st.file_uploader("📤 Sube tu nuevo logo", type=["png", "jpg", "jpeg"], key="logo_upload_sb")
+        if uploaded_file:
+            import tempfile
+            from supabase_client import upload_image, public_url
+            
+            file_ext = uploaded_file.name.split('.')[-1].lower()
+            local_save_name = f"logo.{file_ext}"
+            with open(local_save_name, "wb") as f:
+                f.write(uploaded_file.getvalue())
+                
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file_ext}") as tmp:
+                tmp.write(uploaded_file.getvalue())
+                tmp_path = tmp.name
+                
+            remote_path = "logos/logo.png"
+            if upload_image(tmp_path, remote_path):
+                st.session_state.logo_url = public_url(remote_path)
+            
+            st.session_state.show_logo_uploader = False
+            st.rerun()
 
     st.markdown("<div class='fancy-divider'></div>", unsafe_allow_html=True)
 
@@ -670,6 +751,7 @@ with st.sidebar:
     all_pages = {
         "Inicio":      ("🏠", "Inicio"),
         "Pacientes":   ("👥", "Pacientes"),
+        "Citas":       ("📅", "Citas"),
         "Ventas":      ("🏪", "Registro de Ventas"),
         "Facturación":   ("🧾", "Facturación (SRI)"),
         "Generar Orden": ("📝", "Generar Orden"),
@@ -705,14 +787,19 @@ with st.sidebar:
     # Filtrar dataframes para el resumen
     df_p_view = st.session_state.df_pacientes
     df_h_view = st.session_state.df_historias
+    _hlc_raw = st.session_state.get("df_historias_lc")
+    df_hlc_view = _hlc_raw if _hlc_raw is not None else pd.DataFrame()
     
     if "sucursal" in df_p_view.columns:
         df_p_view = df_p_view[df_p_view["sucursal"] == suc_actual]
     if "sucursal" in df_h_view.columns:
         df_h_view = df_h_view[df_h_view["sucursal"] == suc_actual]
+    if not df_hlc_view.empty and "sucursal" in df_hlc_view.columns:
+        df_hlc_view = df_hlc_view[df_hlc_view["sucursal"] == suc_actual]
         
     n_pacientes = len(df_p_view)
     n_historias = len(df_h_view)
+    n_hist_lc   = len(df_hlc_view)
     
     st.markdown(
         f"<p style='color:#475569; font-size:10px; text-transform:uppercase; letter-spacing:1.5px; margin:0 0 6px 0;'>Resumen ({suc_actual})</p>",
@@ -721,6 +808,9 @@ with st.sidebar:
     c1, c2 = st.columns(2)
     c1.metric("Pacientes", n_pacientes)
     c2.metric("Historias", n_historias)
+    
+    c3, c4 = st.columns(2)
+    c3.metric("Historias LC", n_hist_lc)
 
     st.markdown("<div class='fancy-divider'></div>", unsafe_allow_html=True)
     st.markdown(
@@ -759,6 +849,9 @@ with st.sidebar:
         for key in ["logged_in","user_role","user_name","user_login","user_cargo","user_registro","user_telefono"]:
             st.session_state.pop(key, None)
         st.rerun()
+        
+    # ── Renderizar Botón Flotante de Inteligencia Artificial ──
+    # render_ai_assistant() moved to main body
 
 
 # ══════════════════════════════════════════════════════════════
@@ -774,6 +867,8 @@ elif page == "Trabajos":
     render_trabajos()
 elif page == "Generar Orden":
     render_nueva_orden()
+elif page == "Citas":
+    render_citas()
 elif page == "Ventas":
     render_ventas()
 elif page == "Facturación":
@@ -788,3 +883,8 @@ elif page == "Configuracion":
     render_configuracion()
 else:
     render_clinica()
+
+# ── Renderizar Botón Flotante de Inteligencia Artificial (Desactivado) ──
+# render_ai_assistant()
+# trigger rerun
+# fix tuple

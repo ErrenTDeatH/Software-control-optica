@@ -91,8 +91,7 @@ def render_inventario():
     df = cargar_inventario(sucursal_activa)
 
     if df.empty:
-        st.info("📭 No hay productos registrados.")
-        return
+        st.info("📭 No hay productos registrados en esta sucursal. Empieza agregando uno nuevo.")
 
     # Normalización de columnas
     for col, default in [("nombre", ""), ("categoria", ""), ("proveedor", ""),
@@ -101,8 +100,8 @@ def render_inventario():
         if col not in df.columns:
             df[col] = default
 
-    # Buscador, Filtros y Botón de Agregar
-    f1, f2, f3 = st.columns([2.5, 1, 1])
+    # Buscador, Filtros y Botón de Agregar (En una sola fila)
+    f1, f2, f3, f4 = st.columns([2, 1, 1, 1])
     busq = f1.text_input("🔍 Buscar por código, marca o producto...", label_visibility="collapsed", placeholder="Buscar...")
     f_cat = f2.selectbox("Categoría", ["Todas"] + sorted(df["categoria"].unique().tolist()), label_visibility="collapsed")
     
@@ -111,7 +110,7 @@ def render_inventario():
 
     # Formulario para Agregar Producto
     if st.session_state.get("show_add_form"):
-        st.markdown('<div class="edit-container" style="background:#f0f7ff; border-color:#3b82f6;">', unsafe_allow_html=True)
+        st.markdown('<div class="edit-container" style="background:#f0f7ff; border-color:#3b82f6; padding:20px; border-radius:12px; border:1px solid #bae6fd; margin-bottom:20px;">', unsafe_allow_html=True)
         st.subheader("🆕 Registrar Nuevo Producto")
         with st.form("form_nuevo_prod", border=False):
             c1, c2, c3 = st.columns(3)
@@ -155,7 +154,20 @@ def render_inventario():
     if f_cat != "Todas":
         df_f = df_f[df_f["categoria"] == f_cat]
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    with f4:
+        from utils.pdf import generar_pdf_inventario
+        pdf_bytes = generar_pdf_inventario(df_f, sucursal_activa, st.session_state.get("user_name", ""))
+        st.download_button("📥 PDF Control", data=pdf_bytes, file_name=f"Control_Inventario_{sucursal_activa}.pdf", mime="application/pdf", use_container_width=True)
+
+    ITEMS_POR_PAGINA = 50
+    total_paginas = max(1, (len(df_f) - 1) // ITEMS_POR_PAGINA + 1)
+    
+    c_pag1, c_pag2 = st.columns([4, 1])
+    pag_actual = 1
+    if total_paginas > 1:
+        pag_actual = c_pag2.selectbox("📄 Paginación", range(1, total_paginas + 1), format_func=lambda x: f"Página {x} de {total_paginas}", key="inv_pag", label_visibility="collapsed")
+    
+    df_pagina = df_f.iloc[(pag_actual - 1) * ITEMS_POR_PAGINA : pag_actual * ITEMS_POR_PAGINA]
     
     # ── ENCABEZADOS ────────────────────────────────────────────
     cols_ratio = [1.2, 3.2, 1.2, 1.2, 1.8, 0.9, 0.9, 0.9]
@@ -167,7 +179,7 @@ def render_inventario():
     st.markdown("<hr style='margin:10px 0; opacity:0.2;'>", unsafe_allow_html=True)
     
     # ── FILAS DE DATOS ─────────────────────────────────────────
-    for idx, (_, row) in enumerate(df_f.iterrows()):
+    for idx, (_, row) in enumerate(df_pagina.iterrows()):
         # Lógica de Stock Bajo
         stock_val = float(row.get("cantidad_disponible", 0))
         is_low = stock_val <= 3
@@ -207,20 +219,82 @@ def render_inventario():
             st.markdown('<div style="padding: 15px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin: 10px 0;">', unsafe_allow_html=True)
             a1, a2, a3, a4 = st.columns([1.2, 1.2, 1.2, 1.2])
             
+            # Obtener datos de auditoría del producto
+            st.markdown(f'<div class="product-header-box">📦 Gestionando: {row.get("nombre", "Sin nombre")}</div>', unsafe_allow_html=True)
+
+            a1, a2, a3, a4 = st.columns([1.2, 1.2, 1.2, 1.2])
+            
+            # Registrar cambios con auditoría
+            from database import registrar_auditoria, cargar_auditoria
+            
             if a1.button("➕ Stock", key=f"p_{row['id']}", use_container_width=True):
-                guardar_producto({"id": row['id'], "cantidad_disponible": stock+1}); st.rerun()
+                nuevo_stock = stock + 1
+                guardar_producto({"id": row['id'], "cantidad_disponible": nuevo_stock})
+                registrar_auditoria(
+                    accion="Ajuste Stock (+)",
+                    entidad="Inventario",
+                    detalle=f"Se aumentó el stock de '{row.get('nombre')}' (Código: {row.get('codigo_referencia')}) a {nuevo_stock} unidades.",
+                    usuario=st.session_state.get("user_login", "admin"),
+                    sucursal=sucursal_activa
+                )
+                st.rerun()
+                
             if a2.button("➖ Stock", key=f"m_{row['id']}", use_container_width=True):
-                if stock > 0: guardar_producto({"id": row['id'], "cantidad_disponible": stock-1}); st.rerun()
+                if stock > 0:
+                    nuevo_stock = stock - 1
+                    guardar_producto({"id": row['id'], "cantidad_disponible": nuevo_stock})
+                    registrar_auditoria(
+                        accion="Ajuste Stock (-)",
+                        entidad="Inventario",
+                        detalle=f"Se disminuyó el stock de '{row.get('nombre')}' (Código: {row.get('codigo_referencia')}) a {nuevo_stock} unidades.",
+                        usuario=st.session_state.get("user_login", "admin"),
+                        sucursal=sucursal_activa
+                    )
+                    st.rerun()
+                    
             if a3.button("✏️ Editar", key=f"e_{row['id']}", use_container_width=True):
                 st.session_state[f"ed_{row['id']}"] = not st.session_state.get(f"ed_{row['id']}", False)
                 st.rerun()
+                
             if st.session_state.get("user_role") == "Administrador":
                 if a4.button("🗑️ Borrar", key=f"d_{row['id']}", use_container_width=True):
-                    eliminar_producto(row['id']); st.rerun()
+                    eliminar_producto(row['id'])
+                    registrar_auditoria(
+                        accion="Eliminar Producto",
+                        entidad="Inventario",
+                        detalle=f"Se eliminó el producto '{row.get('nombre')}' (Código: {row.get('codigo_referencia')})",
+                        usuario=st.session_state.get("user_login", "admin"),
+                        sucursal=sucursal_activa
+                    )
+                    st.rerun()
             else:
                 a4.button("🗑️ Protegido", key=f"d_{row['id']}", use_container_width=True, disabled=True)
             
-            st.markdown(f'<div class="product-header-box">📦 Gestionando: {row.get("nombre", "Sin nombre")}</div>', unsafe_allow_html=True)
+            # --- HISTORIAL DE MOVIMIENTOS POR PRODUCTO ---
+            with st.expander("📜 Historial de Movimientos / Auditoría", expanded=False):
+                try:
+                    df_aud = cargar_auditoria(limit=500)
+                    if not df_aud.empty:
+                        # Filtrar las auditorías que contienen el código de referencia en el detalle
+                        codigo_ref = str(row.get('codigo_referencia', '---'))
+                        df_prod_aud = df_aud[df_aud['detalle'].str.contains(codigo_ref, case=False, na=False)]
+                        if not df_prod_aud.empty:
+                            cols_aud = st.columns([1.5, 1.2, 3.5])
+                            cols_aud[0].markdown("**Fecha**")
+                            cols_aud[1].markdown("**Usuario**")
+                            cols_aud[2].markdown("**Cambio / Detalle**")
+                            for _, r_aud in df_prod_aud.iterrows():
+                                c_a = st.columns([1.5, 1.2, 3.5])
+                                f_h = pd.to_datetime(r_aud.get('fecha_hora')).strftime('%d/%m/%Y %H:%M') if r_aud.get('fecha_hora') else '---'
+                                c_a[0].write(f_h)
+                                c_a[1].write(r_aud.get('usuario', 'system'))
+                                c_a[2].write(r_aud.get('detalle', ''))
+                        else:
+                            st.info("Sin registros de movimientos recientes para este producto.")
+                    else:
+                        st.info("No hay logs en la tabla de auditoría general.")
+                except Exception as e:
+                    st.error(f"No se pudo cargar el historial: {e}")
 
             if st.session_state.get(f"ed_{row['id']}"):
                 with st.form(f"f_{row['id']}", border=False):

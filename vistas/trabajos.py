@@ -103,22 +103,22 @@ def render_trabajos():
                 
                 # --- MEJORA PREMIUM: WHATSAPP INTELIGENTE ---
                 msg = ""
+                from utils.whatsapp import generar_msg_orden_lista, wa_link
                 if nuevo_st == "Listo":
-                    msg = f"¡Hola {row['paciente_nombre']}! Te saluda Happy Vision {sucursal_activa}. Tus lentes ya están LISTOS para que pases por ellos. 😊"
+                    msg = generar_msg_orden_lista(row['paciente_nombre'])
                 elif nuevo_st == "Laboratorio":
-                    msg = f"Hola {row['paciente_nombre']}, tus lentes han ingresado a laboratorio. Te avisaremos apenas estén listos."
+                    msg = f"Hola *{row['paciente_nombre']}*,\n\nTe informamos que tus lentes han ingresado a nuestro laboratorio técnico de *Happy Vision*. Te avisaremos apenas estén listos. 👓✨"
                 
                 if msg:
                     # Intentar buscar el teléfono del paciente en la DB
                     from database import cargar_pacientes
                     df_p = cargar_pacientes()
                     p_info = df_p[df_p['nombre'] == row['paciente_nombre']]
-                    tel = str(p_info.iloc[0]['telefono']) if not p_info.empty else ""
+                    tel = str(p_info.iloc[0]['telefono']) if not p_info.empty and 'telefono' in p_info.columns else ""
                     
                     if tel:
-                        from utils import wa_link
                         link = wa_link(tel, msg)
-                        st.markdown(f'<a href="{link}" target="_blank"><button style="background:#25D366; color:white; border:none; padding:8px; border-radius:5px; width:100%; cursor:pointer;">📲 Notificar por WhatsApp</button></a>', unsafe_allow_html=True)
+                        st.markdown(f'<a href="{link}" target="_blank"><button style="background:#25D366; color:white; border:none; padding:8px 12px; border-radius:6px; width:100%; cursor:pointer; font-weight:bold; margin-top:8px;">📲 Notificar por WhatsApp</button></a>', unsafe_allow_html=True)
                     else:
                         st.caption("⚠️ No hay teléfono registrado para este paciente.")
                 

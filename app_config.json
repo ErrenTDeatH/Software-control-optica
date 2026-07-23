@@ -1,0 +1,18 @@
+{
+    "APP_NAME": "Happy Vision",
+    "OWNER_NAME": "Óptica Happy Vision",
+    "OWNER_RUC": "",
+    "SUPPORT_PHONE": "+593 96 324 1158",
+    "PRIMARY_COLOR": "#2563eb",
+    "SECONDARY_COLOR": "#0f172a",
+    "LOGIN_BG_PATH": "login_bg.png",
+    "MAIN_BG_PATH": "main_bg.png",
+    "THEME_PRESET": "Cristal Elegante",
+    "LOGO_PATH": "logo.png",
+    "LICENSED_UUID": "",
+    "FOOTER_TEXT": "Happy Vision · Sistema de Gestión Integral",
+    "SETUP_COMPLETED": true,
+    "STORAGE_MODE": "SUPABASE",
+    "SUPABASE_URL": "https://oqsdnoknuzkexknpakyd.supabase.co",
+    "SUPABASE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xc2Rub2tudXprZXhrbnBha3lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4MTQyMDcsImV4cCI6MjEwMDM5MDIwN30.5LQBs5FQuttXbaRoDuwUqSwwSY-5aiNqvbm9D5-OrMI"
+}

@@ -87,15 +87,17 @@ def render_usuarios():
             )
             st.divider()
 
+            st.markdown("### 👤 Datos Personales y Profesionales")
             nd1, nd2, nd3 = st.columns(3)
-            nu_nombre   = nd1.text_input("Nombre Completo *", placeholder="Dr. Juan Pérez")
+            nu_nombre   = nd1.text_input("Nombre Completo *", placeholder="Opt. Juan Pérez")
             nu_cargo    = nd2.text_input("Cargo / Título", placeholder="Optometrista", value="Optometrista")
-            nu_registro = nd3.text_input("N° Registro Profesional", placeholder="OP-1234")
+            nu_role     = nd3.selectbox("Rol en el sistema", ["Vendedor", "Optometrista", "Administrador"])
 
             ne1, ne2, ne3 = st.columns(3)
-            nu_telefono = ne1.text_input("Teléfono", placeholder="+593 98 765 4321")
-            nu_role     = ne2.selectbox("Rol en el sistema", ["Vendedor", "Optometrista", "Administrador"])
-            nu_activo   = ne3.checkbox("Activo (Permitir acceso)", value=True)
+            nu_registro  = ne1.text_input("N° Registro Profesional SENESCYT", placeholder="OP-2024-XXXX")
+            nu_telefono  = ne2.text_input("Teléfono", placeholder="+593 98 765 4321")
+            nu_email     = ne3.text_input("Correo Electrónico", placeholder="nombre@optica.com")
+            nu_activo    = st.checkbox("Activo (Permitir acceso)", value=True)
 
             from database import cargar_sucursales
             df_suc_db = cargar_sucursales()
@@ -108,12 +110,23 @@ def render_usuarios():
                 default=["Matriz"]
             )
 
-            st.caption("Firma para el certificado PDF (opcional)")
-            nu_firma = st.file_uploader(
-                "Subir imagen de firma (PNG recomendado, fondo blanco)",
-                type=["png", "jpg", "jpeg"],
-                key="firma_upload"
-            )
+            st.divider()
+            st.markdown("### 🎨 Identidad Visual (para certificados PDF)")
+            fi_col, lo_col = st.columns(2)
+            with fi_col:
+                st.caption("✍️ Firma del profesional (PNG recomendado, fondo blanco/transparente)")
+                nu_firma = st.file_uploader(
+                    "Subir imagen de firma",
+                    type=["png", "jpg", "jpeg"],
+                    key="firma_upload"
+                )
+            with lo_col:
+                st.caption("🏥 Logo del establecimiento (aparecerá en los informes PDF)")
+                nu_logo = st.file_uploader(
+                    "Subir logotipo",
+                    type=["png", "jpg", "jpeg"],
+                    key="logo_upload_usr"
+                )
 
             colb1, colb2 = st.columns([1, 1])
             submitted = colb1.form_submit_button("✅ Crear Usuario", type="primary", use_container_width=True)
@@ -133,6 +146,13 @@ def render_usuarios():
                             firma_b64 = base64.b64encode(nu_firma.getvalue()).decode()
                         except Exception as e:
                             st.warning(f"No se pudo procesar la firma: {e}")
+                    
+                    logo_b64 = None
+                    if nu_logo is not None:
+                        try:
+                            logo_b64 = base64.b64encode(nu_logo.getvalue()).decode()
+                        except Exception as e:
+                            st.warning(f"No se pudo procesar el logo: {e}")
 
                     new_user = {
                         "password":  nu_password.strip(),
@@ -141,18 +161,28 @@ def render_usuarios():
                         "cargo":     nu_cargo.strip() or "Optometrista",
                         "registro":  nu_registro.strip(),
                         "telefono":  nu_telefono.strip(),
+                        "email":     nu_email.strip(),
                         "sucursales_asignadas": nu_sucursales,
                         "accesos":   nu_accesos,
-                        "firma_base64": firma_b64
+                        "firma_base64": firma_b64,
+                        "logo_base64": logo_b64
                     }
                     
                     _guardar_usuario(nu_username.strip(), new_user)
+                    # También guardar logo como archivo global si se sube
+                    if nu_logo is not None:
+                        try:
+                            nu_logo.seek(0)
+                            with open("logo.png", "wb") as f:
+                                f.write(nu_logo.read())
+                        except Exception:
+                            pass
                     # AUDITORÍA: Creación de usuario
                     from database import registrar_auditoria
                     registrar_auditoria(
                         accion="Crear Usuario",
                         entidad="Usuario",
-                        detalle=f"Nuevo usuario: {nu_username.strip()} | Nombre: {nu_nombre.strip()} | Rol: {nu_role}",
+                        detalle=f"Nuevo usuario: {nu_username.strip()} | Nombre: {nu_nombre.strip()} | Rol: {nu_role} | SENESCYT: {nu_registro.strip()}",
                         usuario=st.session_state.get("user_login", ""),
                         nombre_usuario=st.session_state.get("user_name", ""),
                         sucursal=st.session_state.get("sucursal_activa", "")

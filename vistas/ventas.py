@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from database import registrar_venta_directa, registrar_pago_saldo, cargar_inventario, cargar_ordenes_trabajo
+from database import registrar_venta_directa, registrar_pago_saldo, cargar_inventario, cargar_ordenes_trabajo, guardar_orden_trabajo
 
 def render_ventas():
     # ── ESTILOS CSS PARA ESTILO FACTURA Y CONFIGURADOR ──
@@ -148,11 +148,20 @@ def render_ventas():
         # PRECIOS Y COSTOS (MODO ADMIN OCULTO PARA TRABAJADORES)
         p1, p2 = st.columns(2)
         precio_lentes = p1.number_input("Precio Venta Lunas ($):", min_value=0.0, value=precio_sugerido)
-        costo_lentes = 0.0
+        
+        # Fallback de costos automáticos para lunas (laboratorio)
+        COSTOS_LUNAS = {
+            "CR39 (Resina)": 5.0,
+            "Policarbonato": 12.0,
+            "Alto Índice": 25.0,
+            "Mineral": 8.0
+        }
+        costo_sugerido_lab = COSTOS_LUNAS.get(material, 0.0) + (len(protecciones) * 2.0)
         
         if es_admin:
-            costo_lentes = p2.number_input("Costo Laboratorio (Lunas) ($):", min_value=0.0, help="Solo visible para Administrador")
+            costo_lentes = p2.number_input("Costo Laboratorio (Lunas) ($):", min_value=0.0, value=costo_sugerido_lab, help="Solo visible para Administrador")
         else:
+            costo_lentes = costo_sugerido_lab
             st.info("💡 Completa la configuración para calcular el total.")
 
         if st.button("➕ REGISTRAR VENTA EN CAJA E HISTORIAL", type="primary", use_container_width=True):
@@ -162,7 +171,7 @@ def render_ventas():
                 if armazon_sel:
                     detalles_txt = f"Armazón {producto['nombre']} + " + detalles_txt
                 
-                # Calcular Costo Total si es admin
+                # Calcular Costo Total
                 costo_total = costo_lentes
                 if armazon_sel:
                     costo_total += float(producto.get("costo_compra", 0))
@@ -213,7 +222,7 @@ def render_ventas():
                         "cliente": razon_social,
                         "identificacion": identificacion,
                         "total": total_v,
-                        "costo_total": sum(i.get("costo", 0) for i in st.session_state.carrito_ventas) if es_admin else 0,
+                        "costo_total": sum(i.get("costo", 0) for i in st.session_state.carrito_ventas),
                         "abono": abono,
                         "saldo": saldo,
                         "metodo_pago": metodo,
@@ -226,7 +235,6 @@ def render_ventas():
                     res = registrar_venta_directa(venta_data)
                     
                     # 2. Crear Órdenes de Trabajo (Si hay lunas)
-                    from database import guardar_orden_trabajo
                     for item in st.session_state.carrito_ventas:
                         if "receta" in item:
                             orden_data = {
@@ -240,12 +248,41 @@ def render_ventas():
                                 "total_venta": total_v
                             }
                             # Guardar en tabla ordenes_trabajo
-                            # (Aquí llamaríamos a guardar_orden_trabajo pero requiere ajustar database.py)
-                            pass
+                            guardar_orden_trabajo(orden_data)
                     
-                    st.success("Venta y Orden generadas correctamente.")
+                    st.success("🎉 Venta y Orden de Trabajo generadas correctamente.")
+                    st.session_state.last_sale_data = {
+                        "cliente": razon_social,
+                        "identificacion": identificacion,
+                        "email": email,
+                        "telefono": telefono,
+                        "direccion": direccion,
+                        "subtotal": total_v / 1.15 if metodo != "Crédito Interno" else total_v,  # Estimación
+                        "descuento": 0.0,
+                        "iva": total_v - (total_v / 1.15) if metodo != "Crédito Interno" else 0.0,
+                        "total": total_v,
+                        "metodo_pago": metodo,
+                        "monto_pagado": abono,
+                        "items": [{"descripcion": i["descripcion"], "cantidad": i["cantidad"], "precio_unitario": i["precio"]} for i in st.session_state.carrito_ventas]
+                    }
                     st.session_state.carrito_ventas = []
                     st.balloons()
+                    
+            if "last_sale_data" in st.session_state:
+                st.markdown("""
+                    <div style="background:#f0fdf4; border:1.5px solid #86efac; border-radius:10px; padding:16px; margin:20px 0;">
+                        <h4 style="color:#16a34a; margin:0 0 8px 0;">⚡ Venta Registrada con Éxito</h4>
+                        <p style="color:#14532d; font-size:13px; margin:0 0 12px 0;">Puedes proceder a emitir e imprimir el comprobante legal tributario en el SRI inmediatamente.</p>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                c_btn1, c_btn2 = st.columns(2)
+                if c_btn1.button("🧾 Emitir Factura SRI Ahora", type="primary", use_container_width=True):
+                    st.session_state.page = "Facturación"
+                    st.session_state.prefilled_factura = st.session_state.pop("last_sale_data")
+                    st.rerun()
+                if c_btn2.button("🛒 Registrar otra Venta", use_container_width=True):
+                    st.session_state.pop("last_sale_data", None)
                     st.rerun()
     
     with tab2:

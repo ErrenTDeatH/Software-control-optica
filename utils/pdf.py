@@ -5,7 +5,7 @@ Certificado Visual + Informe Médico
 
 import io
 import os
-from datetime import date
+from datetime import date, datetime
 import pandas as pd
 from fpdf import FPDF
 
@@ -452,7 +452,102 @@ def generar_pdf_ticket(orden: dict, sucursal_info: dict = None) -> bytes:
     pdf.set_font("Helvetica", "B", 8)
     pdf.cell(0, 5, _s(f"📍 Sucursal: {orden['sucursal']} | Happy Vision"), ln=True, align="C")
 
-    return pdf.output(dest="S").encode("latin-1")
+# ══════════════════════════════════════════════════════════════
+# REPORTE DE INVENTARIO FÍSICO (PDF)
+# ══════════════════════════════════════════════════════════════
+def generar_pdf_inventario(df_inv: pd.DataFrame, sucursal: str, supervisor: str = "") -> bytes:
+    """Genera un PDF con formato de tabla tipo Excel para control de inventario físico."""
+    pdf = FPDF(orientation="L", unit="mm", format="A4")
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=30)
+    pdf.set_margins(10, 15, 10)
+
+    # ─ Encabezado ────────────────────────────────────────────────
+    logo_path = "logo.png" if os.path.exists("logo.png") else None
+    if logo_path:
+        pdf.image(logo_path, x=10, y=10, w=35)
+    
+    pdf.set_y(15)
+    pdf.set_font("Helvetica", "B", 14)
+    pdf.set_text_color(0, 160, 180)
+    pdf.cell(0, 8, _s("REPORTE PARA CONTROL DE INVENTARIO FÍSICO"), ln=True, align="C")
+    
+    pdf.set_font("Helvetica", "", 10)
+    pdf.set_text_color(100, 116, 139)
+    fecha_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+    pdf.cell(0, 6, _s(f"Sucursal: {sucursal}   |   Fecha de emisión: {fecha_str}"), ln=True, align="C")
+    pdf.ln(10)
+
+    # ─ Encabezados de Tabla ──────────────────────────────────────
+    pdf.set_font("Helvetica", "B", 8)
+    pdf.set_fill_color(241, 245, 249)
+    pdf.set_text_color(30, 41, 59)
+    
+    col_widths = [15, 50, 25, 22, 25, 15, 15, 15, 25, 70]
+    headers = ["Cód.", "Producto / Descripción", "Categoría", "Marca", "Proveedor", "Costo", "PVP", "Stock", "Físico", "Observación"]
+    
+    for w, h in zip(col_widths, headers):
+        pdf.cell(w, 8, _s(h), border=1, fill=True, align="C")
+    pdf.ln()
+
+    # ─ Filas de la Tabla ─────────────────────────────────────────
+    pdf.set_font("Helvetica", "", 8)
+    pdf.set_text_color(0, 0, 0)
+    
+    for _, row in df_inv.iterrows():
+        cod = str(row.get("codigo_referencia", row.get("codigo_proveedor", row.get("id", ""))))
+        if not cod or cod == "nan": cod = str(row.get("id", ""))
+        cod = cod[:8]
+        
+        nombre = str(row.get("nombre", ""))[:32]
+        cat = str(row.get("categoria", ""))[:15]
+        marca = str(row.get("marca", ""))[:12]
+        prov = str(row.get("proveedor", ""))[:15]
+        
+        try:
+            costo = f"${float(row.get('costo_compra', 0)):.2f}"
+        except:
+            costo = "$0.00"
+            
+        try:
+            pvp = f"${float(row.get('precio_venta', 0)):.2f}"
+        except:
+            pvp = "$0.00"
+            
+        stock = str(row.get("stock", row.get("cantidad_disponible", 0)))
+        
+        pdf.cell(col_widths[0], 7, _s(cod), border=1, align="C")
+        pdf.cell(col_widths[1], 7, _s(nombre), border=1, align="L")
+        pdf.cell(col_widths[2], 7, _s(cat), border=1, align="C")
+        pdf.cell(col_widths[3], 7, _s(marca), border=1, align="C")
+        pdf.cell(col_widths[4], 7, _s(prov), border=1, align="C")
+        pdf.cell(col_widths[5], 7, _s(costo), border=1, align="R")
+        pdf.cell(col_widths[6], 7, _s(pvp), border=1, align="R")
+        pdf.cell(col_widths[7], 7, _s(stock), border=1, align="C")
+        pdf.cell(col_widths[8], 7, "", border=1, align="C") # Espacio para llenar
+        pdf.cell(col_widths[9], 7, "", border=1, align="L") # Espacio para observación
+        pdf.ln()
+
+    # ─ Zona de Firmas (Footer Fijo) ──────────────────────────────
+    # Si queda poco espacio, forzamos un salto de página para la firma
+    if pdf.get_y() > 165:  # En landscape (L), la altura es 210mm. 210 - 30 (margen bottom) = 180mm max
+        pdf.add_page()
+        pdf.set_y(30)
+    else:
+        pdf.ln(25)
+        
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(138, 8, _s("___________________________________"), ln=False, align="C")
+    pdf.cell(138, 8, _s("___________________________________"), ln=True, align="C")
+    
+    pdf.set_font("Helvetica", "", 9)
+    pdf.cell(138, 6, _s("Firma del Responsable / Auditor"), ln=False, align="C")
+    pdf.cell(138, 6, _s(f"Firma del Supervisor ({supervisor})" if supervisor else "Firma del Supervisor"), ln=True, align="C")
+
+    raw = pdf.output(dest="S")
+    if isinstance(raw, (bytes, bytearray)):
+        return bytes(raw)
+    return raw.encode("latin-1")
 
 def generar_pdf_venta(venta_data: dict) -> bytes:
     """Genera un PDF de factura/ticket para una venta directa."""
@@ -499,4 +594,249 @@ def generar_pdf_venta(venta_data: dict) -> bytes:
     pdf.set_font("Arial", 'I', 8)
     pdf.multi_cell(0, 4, _s("Gracias por su compra. Recuerde realizar su control visual cada año.\nEste documento no es una factura válida ante el SRI."), align="C")
     
-    return pdf.output(dest='S').encode('latin1')
+    raw = pdf.output(dest='S')
+    if isinstance(raw, (bytes, bytearray)):
+        return bytes(raw)
+    return raw.encode("latin-1") if isinstance(raw, str) else bytes(raw)
+
+
+def generar_pdf_historia_lc(row: dict, paciente_info: dict, opto: dict, is_indicaciones: bool = False) -> bytes:
+    """Genera el Certificado Visual PDF para Adaptación de Lentes de Contacto."""
+    pdf = FPDF(orientation="P", unit="mm", format="A4")
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=20)
+    pdf.set_margins(18, 10, 18)
+
+    # 💧 LOGO 💧
+    logo_path = None
+    for cand in ["logo.png", "logo.jpg", "logo.jpeg"]:
+        if os.path.exists(cand):
+            logo_path = cand
+            break
+
+    if logo_path:
+        try:
+            watermark_path = logo_path
+            try:
+                from PIL import Image
+                img = Image.open(logo_path).convert("RGBA")
+                r, g, b, a = img.split()
+                a_faded = a.point(lambda p: p * 0.10)
+                img.putalpha(a_faded)
+                bg = Image.new("RGBA", img.size, (255, 255, 255, 255))
+                bg.paste(img, (0, 0), img)
+                watermark_path = "logo_watermark_temp.png"
+                bg.convert("RGB").save(watermark_path, format="PNG")
+            except Exception:
+                pass
+            pdf.image(watermark_path, x=5, y=40, w=200)
+
+            header_path = logo_path
+            try:
+                from PIL import Image, ImageChops
+                img_head = Image.open(logo_path).convert("RGBA")
+                bbox = img_head.split()[-1].getbbox()
+                if bbox: img_head = img_head.crop(bbox)
+                final_bg = Image.new("RGBA", img_head.size, (255, 255, 255, 255))
+                final_bg.paste(img_head, (0, 0), img_head)
+                header_path = "logo_header_temp.png"
+                final_bg.convert("RGB").save(header_path, format="PNG")
+            except Exception:
+                pass
+            pdf.image(header_path, x=82.5, y=3, w=45)
+            pdf.set_y(30)
+        except Exception:
+            pdf.set_y(20)
+    else:
+        pdf.set_font("Helvetica", "B", 14)
+        pdf.set_text_color(0, 160, 180)
+        pdf.cell(0, 10, "HAPPY VISION", ln=True, align="C")
+        pdf.set_font("Helvetica", "", 9)
+        pdf.set_text_color(100, 100, 100)
+        pdf.cell(0, 5, "Tu optica amiga", ln=True, align="C")
+
+    # 💧 LÍNEA + TÍTULO 💧
+    pdf.set_draw_color(0, 160, 180)
+    pdf.set_line_width(1)
+    pdf.line(18, pdf.get_y(), 192, pdf.get_y())
+    pdf.ln(6)
+    pdf.set_font("Helvetica", "B", 18)
+    pdf.set_text_color(30, 30, 30)
+    title = "INDICACIONES DE LENTES DE CONTACTO" if is_indicaciones else "CERTIFICADO DE LENTES DE CONTACTO"
+    pdf.cell(0, 10, title, ln=True, align="C")
+    pdf.ln(3)
+
+    # 💧 DATOS PACIENTE 💧
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.set_text_color(30, 30, 30)
+    pdf.cell(22, 6, "NOMBRE:", ln=False)
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(81, 6, _s(str(paciente_info.get("nombre", "")).upper()), ln=False)
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(18, 6, "CEDULA:", ln=False)
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(0, 6, _s(paciente_info.get("identificacion", "")), ln=True)
+
+    edad_display = str(paciente_info.get('edad', ''))
+    fnac_raw = paciente_info.get('fecha_nacimiento', '')
+    if fnac_raw:
+        try:
+            _fnac = date.fromisoformat(str(fnac_raw)[:10])
+            _hoy = date.today()
+            edad_display = str(_hoy.year - _fnac.year - ((_hoy.month, _hoy.day) < (_fnac.month, _fnac.day)))
+        except Exception:
+            pass
+
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(14, 6, "EDAD:", ln=False)
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(28, 6, _s(f"{edad_display} años"), ln=False)
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(17, 6, "FECHA:", ln=False)
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(44, 6, _s(row.get("fecha", "")), ln=False)
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(24, 6, "TELEFONO:", ln=False)
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(0, 6, _s(paciente_info.get("telefono", "")), ln=True)
+
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(50, 6, "MOTIVO DE CONSULTA: ", ln=False)
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(0, 6, _s(row.get("lc_motivo_consulta", "")), ln=True)
+    pdf.ln(3)
+
+    if not is_indicaciones:
+        def draw_lc_table(titulo, od_str, oi_str):
+            pdf.ln(2)
+            pdf.set_fill_color(240, 248, 255)
+            pdf.set_text_color(0, 100, 150)
+            pdf.set_draw_color(200, 200, 200)
+            pdf.set_line_width(0.3)
+            pdf.set_font("Helvetica", "B", 9)
+            pdf.cell(0, 6, _s(titulo), border="LT", ln=True, fill=True, align="C")
+            pdf.set_fill_color(255, 255, 255)
+            pdf.set_text_color(30, 30, 30)
+            pdf.set_font("Helvetica", "", 9)
+            # OD
+            pdf.cell(12, 6, "O.D.", border="LT", ln=False, fill=True)
+            pdf.cell(0, 6, _s(od_str), border="LT", ln=True)
+            # OI
+            pdf.cell(12, 6, "O.I.", border="LTB", ln=False, fill=True)
+            pdf.cell(0, 6, _s(oi_str), border="LTB", ln=True)
+            pdf.ln(1)
+            pdf.set_text_color(30, 30, 30)
+
+        # Lentes de Prueba
+        if str(row.get("lc_prueba_od", "")) != "nan" or str(row.get("lc_prueba_oi", "")) != "nan":
+            draw_lc_table("LENTES DE PRUEBA Y SOBRE-REFRACCIÓN", row.get("lc_prueba_od", ""), row.get("lc_prueba_oi", ""))
+            
+        # Lentes Finales
+        if str(row.get("lc_final_od", "")) != "nan" or str(row.get("lc_final_oi", "")) != "nan":
+            draw_lc_table("PARÁMETROS DEL LENTE DEFINITIVO", row.get("lc_final_od", ""), row.get("lc_final_oi", ""))
+
+        pdf.ln(2)
+        if str(row.get("lc_marca_final", "")) != "nan":
+            pdf.set_font("Helvetica", "B", 9)
+            pdf.cell(30, 6, "Marca:", ln=False)
+            pdf.set_font("Helvetica", "", 9)
+            pdf.cell(0, 6, _s(row.get("lc_marca_final", "")), ln=True)
+        if str(row.get("lc_modalidad", "")) != "nan":
+            pdf.set_font("Helvetica", "B", 9)
+            pdf.cell(30, 6, "Modalidad:", ln=False)
+            pdf.set_font("Helvetica", "", 9)
+            pdf.cell(0, 6, _s(row.get("lc_modalidad", "")), ln=True)
+
+    # RECOMENDACIONES
+    recom = row.get("recomendaciones", "") or row.get("lc_observaciones", "")
+    if recom and str(recom) != "nan":
+        pdf.ln(4)
+        pdf.set_font("Helvetica", "B", 10)
+        pdf.set_text_color(0, 160, 180)
+        pdf.cell(0, 6, "INDICACIONES Y CUIDADOS:", ln=True)
+        pdf.set_text_color(30, 30, 30)
+        pdf.set_font("Helvetica", "", 9)
+        pdf.multi_cell(0, 5, _s(recom))
+
+    if row.get("lc_proximo_control") and str(row.get("lc_proximo_control")) != "nan":
+        pdf.ln(2)
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.cell(35, 6, "Proximo control:", ln=False)
+        pdf.set_font("Helvetica", "", 9)
+        pdf.cell(0, 6, _s(row.get("lc_proximo_control", "")), ln=True)
+
+    if row.get("lc_solucion_final") and str(row.get("lc_solucion_final")) != "nan":
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.cell(35, 6, "Solucion uso:", ln=False)
+        pdf.set_font("Helvetica", "", 9)
+        pdf.cell(0, 6, _s(row.get("lc_solucion_final", "")), ln=True)
+
+    # 💧 FIRMA Y PIE DE PÁGINA (posición dinámica) 💧
+    firma_path = f"firma_{opto.get('username', '')}.png"
+    if not __import__("os").path.exists(firma_path):
+        firma_path = "firma.png"
+
+    espacio_firma = 35
+    y_firma_min   = 257 - espacio_firma
+    y_actual      = pdf.get_y()
+    y_firma       = max(y_actual + 6, y_firma_min)
+    if y_firma + espacio_firma > 277:
+        y_firma = 277 - espacio_firma
+
+    firma_base64 = opto.get("firma_base64")
+    import base64 as _b64
+    if firma_base64:
+        try:
+            with open("temp_firma.png", "wb") as f:
+                f.write(_b64.b64decode(firma_base64))
+            pdf.image("temp_firma.png", x=77, y=y_firma, w=55, h=16)
+        except Exception: 
+            if os.path.exists(firma_path): pdf.image(firma_path, x=77, y=y_firma, w=55, h=16)
+    elif os.path.exists(firma_path):
+        try:
+            pdf.image(firma_path, x=77, y=y_firma, w=55, h=16)
+        except Exception:
+            pass
+
+    y_linea = y_firma + 17
+    pdf.set_y(y_linea)
+    pdf.set_draw_color(80, 80, 80)
+    pdf.set_line_width(0.4)
+    pdf.line(65, pdf.get_y(), 145, pdf.get_y())
+    pdf.ln(2)
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.set_text_color(30, 30, 30)
+    pdf.cell(0, 5, _s(opto.get("nombre", "")), ln=True, align="C")
+    pdf.cell(0, 5, _s(opto.get("cargo", "OPTOMETRA")).upper(), ln=True, align="C")
+    pdf.set_font("Helvetica", "", 9)
+    pdf.set_text_color(80, 80, 80)
+    pdf.cell(0, 5, f"Reg.: {_s(opto.get('registro', ''))}  |  Tel.: {_s(opto.get('telefono', ''))}", ln=True, align="C")
+
+    # 💧 DIRECCIÓN DE LA SUCURSAL DINÁMICA 💧
+    pdf.ln(1)
+    sucursal_pdf = row.get("sucursal", "Matriz")
+    if not sucursal_pdf:
+        sucursal_pdf = "Matriz"
+        
+    from database import cargar_sucursales
+    df_s = cargar_sucursales()
+    dir_sucursal = "Dirección no registrada"
+    if not df_s.empty:
+        match_suc = df_s[df_s["nombre"] == sucursal_pdf]
+        if not match_suc.empty:
+            dir_sucursal = match_suc.iloc[0]["direccion"]
+    
+    pdf.set_font("Helvetica", "I", 8)
+    pdf.set_text_color(150, 150, 150)
+    pdf.cell(0, 4, _s(f"Atendido en: {sucursal_pdf} - {dir_sucursal}"), ln=True, align="C")
+
+    # Limpiar
+    for f in ["logo_watermark_temp.png", "logo_header_temp.png"]:
+        if os.path.exists(f):
+            try: os.remove(f)
+            except: pass
+
+    raw = pdf.output(dest='S')
+    if isinstance(raw, (bytes, bytearray)):
+        return bytes(raw)
+    return raw.encode("latin-1") if isinstance(raw, str) else bytes(raw)
