@@ -1,0 +1,30 @@
+with st.expander(f"👁️ LC: {hlc.get('fecha','')} — {hlc.get('lc_motivo_consulta','Adaptación de Lentes de Contacto')}"):
+                                # Header de la historia LC
+                                st.markdown(f"""
+                                <div style='display:flex;justify-content:space-between;align-items:center;
+                                background:#fdf6ee;border:1px solid #d4a96a;border-radius:8px;
+                                padding:10px 16px;margin-bottom:12px;'>
+                                    <div>
+                                        <span style='font-weight:700;color:#7c3f00;font-size:15px;'>👁️ Historia LC</span>
+                                        <span style='color:#b38b5a;font-size:13px;margin-left:12px;'>📅 {hlc.get('fecha','')}</span>
+                                    </div>
+                                    <div>
+                                        <span style='background:#7c3f00;color:white;padding:4px 10px;border-radius:20px;font-size:12px;'>
+                                        👨‍⚕️ {hlc.get('optometrista','')}
+                                        </span>
+                                    </div>
+                                </div>
+                                """, unsafe_allow_html=True)
+
+                                # Bloque 1 — Anamnesis
+                                if any(hlc.get(k,"") for k in ["lc_usuario_previo","lc_tipo_lente_ant","lc_marca_ant","lc_motivo_consulta"]):
+                                    st.markdown("<b style='color:#7c3f00;'>📝 Anamnesis</b>", unsafe_allow_html=True)
+                                    lc_b1_1, lc_b1_2, lc_b1_3 = st.columns(3)
+                                    lc_b1_1.metric("Usuario Previo LC", hlc.get("lc_usuario_previo","—") or "—")
+                                    lc_b1_2.metric("Tipo Lente Anterior", hlc.get("lc_tipo_lente_ant","—") or "—")
+                                    lc_b1_3.metric("Motivo Consulta", hlc.get("lc_motivo_consulta","—") or "—")
+                                    if hlc.get("lc_marca_ant"): st.caption(f"Marca anterior: {hlc['lc_marca_ant']} | Horas uso: {hlc.get('lc_horas_uso','—')} h/día")
+
+                                # Bloque 2 — Refracción y Queratometría
+                                if any(hlc.get(k,"") for k in ["lc_rx_od","lc_rx_oi","lc_kera_od","lc_kera_oi"]):
+                                    st.markdown("<b style='color:#7c3f00;'>🔬 Refracción y Queratometría</b>", unsafe_allow_html=

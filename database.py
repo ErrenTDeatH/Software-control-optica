@@ -350,7 +350,7 @@ def registrar_pago_saldo(orden_id: int, monto: float, metodo: str, usuario: str,
 # ══════════════════════════════════════════════════════════════
 # PACIENTES
 # ══════════════════════════════════════════════════════════════
-@cache_data(ttl=2, show_spinner=False)
+@cache_data(ttl=300, show_spinner=False)
 def cargar_pacientes() -> pd.DataFrame:
     """Carga todos los pacientes desde Supabase."""
     try:

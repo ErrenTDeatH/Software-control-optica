@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "C:\Users\Antho\Happy app\vistas\clinica.py", line 1079, in render_clinica
+    link_ind = wa_link(tel_pac, msg_ind)
+  File "C:\Users\Antho\Happy app\utils\whatsapp.py", line 14, in wa_link
+    return f"https://wa.me/{num}?text={urllib.parse.quote(mensaje)}"
+                                       ~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\Antho\AppData\Local\Programs\Python\Python313\Lib\urllib\parse.py", line 927, in quote
+    return quote_from_bytes(string, safe)
+  File "C:\Users\Antho\AppData\Local\Programs\Python\Python313\Lib\urllib\parse.py", line 957, in quote_from_bytes
+    raise TypeError("quote_from_bytes() expected bytes")
+TypeError: quote_from_bytes() expected bytes

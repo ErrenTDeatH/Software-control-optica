@@ -429,6 +429,7 @@ def render_clinica():
                         st.session_state.df_historias["paciente_id"] == pac["id"]
                     ].sort_values("fecha", ascending=False)
 
+<<<<<<< HEAD
                     # ── CONTROL ANUAL DE LA VISTA & HISTORIAL DE COMPRAS ──
                     from database import cargar_ventas_historial
                     from datetime import datetime
@@ -500,6 +501,8 @@ def render_clinica():
                     except Exception as e:
                         print(f"Error cargando historial de compras: {e}")
 
+=======
+>>>>>>> aeff6931d6ef494b1d01c194039daf01d34af7bb
                     ca, cb, cc, cd = st.columns([2, 1.3, 1.3, 1])
                     ca.caption(f"🗂️ {len(hist_pac)} consulta(s)")
 

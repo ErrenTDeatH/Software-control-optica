@@ -669,7 +669,6 @@ if st.session_state.get("logged_in") and not st.session_state.get("sucursal_acti
 # CARGA DE BASE DE DATOS DIFERIDA
 # ══════════════════════════════════════════════════════════════
 if not st.session_state.get("initialized_db"):
-    st.cache_data.clear()
     with st.spinner("Cargando base de datos de pacientes e historias..."):
         from database import cargar_pacientes, cargar_historias, cargar_historias_lc, migrar_estructuras
         st.session_state.df_pacientes = cargar_pacientes()

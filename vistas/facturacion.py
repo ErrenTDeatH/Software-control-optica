@@ -1,10 +1,16 @@
 import streamlit as st
 import pandas as pd
+<<<<<<< HEAD
 from datetime import datetime, date
 from database import cargar_ventas_historial, registrar_auditoria
 from database_facturas import guardar_factura, cargar_facturas, anular_factura
 from utils.firma_sri import cargar_config_empresa, validar_config_sri, firmar_y_enviar_sri
 
+=======
+from datetime import datetime
+from database import cargar_ventas_historial
+from utils import sri, correo
+>>>>>>> aeff6931d6ef494b1d01c194039daf01d34af7bb
 
 def render_facturacion():
     st.markdown("""
@@ -179,11 +185,76 @@ def render_facturacion():
             </div>
         """, unsafe_allow_html=True)
 
+<<<<<<< HEAD
         # MÉTODO DE PAGO
         c_mp1, c_mp2 = st.columns(2)
         metodo_pago = c_mp1.selectbox("Forma de Pago:", ["Efectivo", "Tarjeta de Crédito", "Tarjeta de Débito", "Transferencia", "Cheque", "Crédito"])
         monto_pagado = c_mp2.number_input("Monto Recibido ($):", min_value=0.0, value=total, step=0.50)
         saldo_pendiente = max(0.0, total - monto_pagado)
+=======
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("🚀 EMITIR FACTURA ELECTRÓNICA", type="primary", use_container_width=True):
+            try:
+                # Preparar datos del comprobante
+                datos = {
+                    "razon_social": razon_social,
+                    "identificacion": identificacion,
+                    "cliente": razon_social,
+                    "ruc_emisor": "1724219463001",
+                    "establecimiento": establecimiento.split('-')[0] if '-' in establecimiento else establecimiento,
+                    "punto_emision": establecimiento.split('-')[1] if '-' in establecimiento else "001",
+                    "secuencial": secuencial.zfill(9),
+                    "direccion_matriz": direccion,
+                    "direccion_establecimiento": direccion,
+                    "subtotal": 0.0,
+                    "iva": 0.0,
+                    "total": 0.0,
+                    "items": [
+                        {
+                            "codigo": "SERV001",
+                            "descripcion": "Servicios Ópticos",
+                            "cantidad": 1,
+                            "precio": 0.0,
+                            "descuento": 0.0,
+                            "precio_total": 0.0,
+                        }
+                    ],
+                }
+                # Generar XML y firmar
+                xml_raw = sri.generar_xml_factura(datos)
+                xml_firmado = sri.firmar_xml_xades(xml_raw, p12_path="firma.p12", password="")
+                # Enviar a SRI (recepción)
+                resp = sri.enviar_sri_recepcion(xml_firmado)
+                if resp.get("estado") == 200:
+                    # Autorizar comprobante
+                    clave = sri.generar_clave_acceso(
+                        fecha_emision=datetime.now().strftime("%d%m%Y"),
+                        tipo_comprobante="01",
+                        ruc=datos["ruc_emisor"],
+                        ambiente="2",
+                        numero_secuencial=datos["secuencial"],
+                        codigo_numerico="12345678",
+                    )
+                    auth = sri.autorizar_sri_comprobante(clave)
+                    # Generar PDF RIDE
+                    pdf_bytes = correo.crear_pdf_ride(xml_firmado)
+                    # Enviar email al cliente
+                    enviado = correo.enviar_email(
+                        destino=email,
+                        asunto="Factura Electrónica - Happy Vision",
+                        cuerpo="Adjunto encontrará su factura electrónica y el RIDE.",
+                        adjuntos=[("factura.xml", xml_firmado.encode("utf-8")), ("RIDE.pdf", pdf_bytes)],
+                    )
+                    if enviado:
+                        st.success("✅ Factura emitida, autorizada y enviada por email.")
+                    else:
+                        st.error("⚠️ Factura generada, pero falló el envío de email.")
+                else:
+                    st.error(f"❌ Error al enviar al SRI: {resp.get('texto')}")
+            except Exception as e:
+                st.error(f"❌ Ocurrió un error durante la facturación: {e}")
+            st.balloons()
+>>>>>>> aeff6931d6ef494b1d01c194039daf01d34af7bb
 
         st.divider()
 
@@ -299,6 +370,7 @@ def render_facturacion():
     # TAB 2: HISTORIAL
     # ══════════════════════════════════════════════════════════════
     with tab2:
+<<<<<<< HEAD
         st.subheader("🗂️ Historial de Facturas")
 
         col_f1, col_f2 = st.columns(2)
@@ -354,3 +426,7 @@ def render_facturacion():
                             st.rerun()
 
                     st.markdown("<hr style='margin:6px 0; opacity:0.12;'>", unsafe_allow_html=True)
+=======
+        st.subheader("🔍 Historial de Facturas Emitidas")
+        st.info("Aquí se mostrarán los comprobantes autorizados por el SRI.")
+>>>>>>> aeff6931d6ef494b1d01c194039daf01d34af7bb

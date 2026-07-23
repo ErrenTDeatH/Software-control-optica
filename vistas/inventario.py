@@ -91,7 +91,12 @@ def render_inventario():
     df = cargar_inventario(sucursal_activa)
 
     if df.empty:
+<<<<<<< HEAD
         st.info("📭 No hay productos registrados en esta sucursal. Empieza agregando uno nuevo.")
+=======
+        st.info("📭 No hay productos registrados en esta sucursal.")
+        return
+>>>>>>> aeff6931d6ef494b1d01c194039daf01d34af7bb
 
     # Normalización de columnas
     for col, default in [("nombre", ""), ("categoria", ""), ("proveedor", ""),

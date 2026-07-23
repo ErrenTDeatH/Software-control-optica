@@ -1,14 +1,23 @@
 # -*- coding: utf-8 -*-
 """
+<<<<<<< HEAD
+=======
+Scale: 1:1
+>>>>>>> aeff6931d6ef494b1d01c194039daf01d34af7bb
 HAPPY VISION · vistas/dashboard.py
 Módulo de Dashboard Operativo & Inteligencia de Negocios
 """
 
 import streamlit as st
 import pandas as pd
+import json
 import plotly.express as px
 import plotly.graph_objects as go
+<<<<<<< HEAD
 from datetime import datetime, date
+=======
+from datetime import datetime
+>>>>>>> aeff6931d6ef494b1d01c194039daf01d34af7bb
 from database import (
     cargar_ordenes_trabajo,
     cargar_inventario,
@@ -16,6 +25,7 @@ from database import (
     cargar_ventas_historial,
     cargar_citas_hoy,
     cargar_sucursales,
+<<<<<<< HEAD
     cargar_historias,
     cargar_pacientes,
 )
@@ -27,6 +37,10 @@ def _cargar_pacientes_safe(sucursal):
         return cargar_pacientes(sucursal)
     except Exception:
         return pd.DataFrame()
+=======
+    cargar_historias
+)
+>>>>>>> aeff6931d6ef494b1d01c194039daf01d34af7bb
 
 def render_dashboard():
     st.markdown("""
@@ -102,6 +116,7 @@ def render_dashboard():
 
 
 def render_panel_operativo(sucursal):
+<<<<<<< HEAD
     hoy = date.today()
     hoy_str = hoy.strftime("%Y-%m-%d")
     hoy_fmt = hoy.strftime("%d/%m/%Y")
@@ -192,6 +207,52 @@ def render_panel_operativo(sucursal):
                         <div style="font-size:11px; font-weight:700; color:{color_estado}; background:{color_estado}15; padding:3px 10px; border-radius:20px;">{estado}</div>
                     </div>
                 """, unsafe_allow_html=True)
+=======
+    # ── ALERTAS DE CITAS DE HOY (MÓDULO 1) ──
+    citas_hoy = cargar_citas_hoy(sucursal)
+    if not citas_hoy.empty:
+        st.markdown(f"""
+            <div class="alert-ok" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6); border-color: #3b82f6; margin-bottom: 20px;">
+                <div class="alert-text">📅 <b>¡Alertas de Agenda!</b> Tienes <b>{len(citas_hoy)}</b> cita(s) programada(s) para hoy en esta sucursal.</div>
+                <div class="alert-sub">Revisa la pestaña "Agenda y Citas" para ver el detalle y comenzar la atención del día.</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    # 1. MÉTRICAS OPERATIVAS
+    resumen = obtener_resumen_dia(sucursal, pd.Timestamp.now().strftime("%Y-%m-%d"))
+    df_ordenes = cargar_ordenes_trabajo(sucursal)
+    df_inv = cargar_inventario(sucursal)
+    
+    m1, m2, m3, m4 = st.columns(4)
+    
+    # Ventas de hoy
+    ventas_hoy = resumen["Efectivo"] + resumen["Tarjeta"] + resumen["Transferencia"]
+    m1.metric("Ventas de Hoy", f"${ventas_hoy:.2f}", delta=f"-${resumen['Gastos']:.2f} gastos")
+    
+    # Órdenes en Laboratorio
+    en_lab = 0
+    listos = 0
+    if not df_ordenes.empty and "estado" in df_ordenes.columns:
+        en_lab = len(df_ordenes[df_ordenes["estado"] == "En Laboratorio"])
+        listos = len(df_ordenes[df_ordenes["estado"] == "Listo para Entrega"])
+    
+    m2.metric("En Laboratorio", en_lab, help="Trabajos actualmente en proceso técnico")
+    m3.metric("Listos p/ Entrega", listos, delta=f"{listos} clientes esperando" if listos > 0 else None)
+    
+    # Alertas de Inventario
+    bajo_stock = 0
+    if not df_inv.empty:
+        col_s = "cantidad_disponible" if "cantidad_disponible" in df_inv.columns else "stock"
+        col_m = "stock_minimo" if "stock_minimo" in df_inv.columns else None
+        
+        if col_m:
+            bajo_stock = len(df_inv[df_inv[col_s] <= df_inv[col_m]])
+        else:
+            # Fallback a stock <= 3
+            bajo_stock = len(df_inv[df_inv[col_s] <= 3])
+            
+    m4.metric("Bajo Stock", bajo_stock, delta="Revisar" if bajo_stock > 0 else "OK", delta_color="inverse" if bajo_stock > 0 else "normal")
+>>>>>>> aeff6931d6ef494b1d01c194039daf01d34af7bb
 
     with col_cobrar:
         st.markdown("### 🔴 Por Cobrar")
@@ -455,6 +516,7 @@ def render_bi_dashboard(sucursal_activa):
         if total_rev > 0:
             df_sold["cum_pct"] = (df_sold["cum_ingresos"] / total_rev) * 100
             
+<<<<<<< HEAD
             def abc_classify(pct):
                 if pct <= 70: return "A (Alta Rotación / 70% Valor)"
                 elif pct <= 90: return "B (Rotación Media / 20% Valor)"
@@ -492,6 +554,204 @@ def render_bi_dashboard(sucursal_activa):
     else:
         st.info("Sin datos para análisis de rotación ABC.")
 
+=======
+            st.markdown("**🚨 Alertas de Reposición**")
+            if col_m:
+                df_alertas = df_inv[df_inv[col_s] <= df_inv[col_m]].head(5)
+            else:
+                df_alertas = df_inv[df_inv[col_s] <= 3].head(5)
+                
+            for _, row in df_alertas.iterrows():
+                st.error(f"**{row.get('nombre', 'Producto')}**\n\nQuedan solo **{int(row.get(col_s, 0))}** unidades.")
+        else:
+            st.success("✅ Inventario saludable.")
+            
+        st.markdown("---")
+        # Mostrar órdenes más antiguas sin entregar
+        st.markdown("**⏳ Trabajos Pendientes**")
+        if not df_ordenes.empty and "estado" in df_ordenes.columns:
+            df_viejas = df_ordenes[df_ordenes["estado"] == "Pendiente"].head(3)
+            for _, row in df_viejas.iterrows():
+                st.warning(f"ID #{row['id']} - {row['paciente_nombre']}")
+        else:
+            st.caption("No hay trabajos pendientes.")
+
+    # Acceso Rápido
+    st.markdown("### ⚡ Acciones Rápidas")
+    cq1, cq2, cq3 = st.columns(3)
+    if cq1.button("📅 Gestionar Agenda / Citas", use_container_width=True):
+        st.session_state.page = "Citas"
+        st.rerun()
+    if cq2.button("👥 Ver Clientes y Fichas", use_container_width=True):
+        st.session_state.page = "Pacientes"
+        st.rerun()
+    if cq3.button("💰 Abrir/Cerrar Caja Hoy", use_container_width=True):
+        st.session_state.page = "Contabilidad"
+        st.rerun()
+
+
+def render_bi_dashboard(sucursal_activa):
+    st.subheader("📊 Business Intelligence (BI) y Reportes Estratégicos")
+    
+    # Filtros BI de sucursal
+    df_sucursales = cargar_sucursales()
+    lista_sucs = ["Todas"] + (df_sucursales["nombre"].tolist() if not df_sucursales.empty else ["Matriz"])
+    
+    col_f1, col_f2 = st.columns([1, 2])
+    with col_f1:
+        suc_sel = st.selectbox("Analizar Sucursal:", lista_sucs, index=lista_sucs.index(sucursal_activa) if sucursal_activa in lista_sucs else 0)
+    with col_f2:
+        st.write("") # Alineador estético
+
+    # 1. Cargar Historial Completo de Ventas
+    df_ventas = cargar_ventas_historial(suc_sel)
+    df_inv = cargar_inventario(None if suc_sel == "Todas" else suc_sel)
+    df_historias = cargar_historias()
+    
+    if df_ventas.empty:
+        st.warning("⚠️ No se registran datos de ventas para generar el reporte gerencial.")
+        return
+
+    # Normalizar tipos
+    df_ventas["total"] = pd.to_numeric(df_ventas["total"], errors='coerce').fillna(0.0)
+    df_ventas["costo_total"] = pd.to_numeric(df_ventas["costo_total"], errors='coerce').fillna(0.0)
+    df_ventas["abono"] = pd.to_numeric(df_ventas["abono"], errors='coerce').fillna(0.0)
+    df_ventas["saldo"] = pd.to_numeric(df_ventas["saldo"], errors='coerce').fillna(0.0)
+    df_ventas["fecha_dt"] = pd.to_datetime(df_ventas["fecha"])
+
+    # ══════════════════════════════════════════════════════════════
+    # R1: REPORTE FINANCIERO Y DE RENTABILIDAD
+    # ══════════════════════════════════════════════════════════════
+    total_ingresos = df_ventas["total"].sum()
+    total_costos = df_ventas["costo_total"].sum()
+    utilidad_bruta = total_ingresos - total_costos
+    margen_promedio = (utilidad_bruta / total_ingresos * 100) if total_ingresos > 0 else 0.0
+
+    st.markdown("#### 1. KPI Financieros y Margen de Utilidad")
+    
+    st.markdown(f"""
+        <div class="bi-kpi-container">
+            <div class="bi-kpi-card">
+                <div class="bi-kpi-label">Ingresos Globales</div>
+                <div class="bi-kpi-value">${total_ingresos:,.2f}</div>
+            </div>
+            <div class="bi-kpi-card">
+                <div class="bi-kpi-label">Costo de Adquisición (Lab/Stock)</div>
+                <div class="bi-kpi-value-yellow">${total_costos:,.2f}</div>
+            </div>
+            <div class="bi-kpi-card">
+                <div class="bi-kpi-label">Utilidad Bruta Neta</div>
+                <div class="bi-kpi-value-green">${utilidad_bruta:,.2f}</div>
+            </div>
+            <div class="bi-kpi-card">
+                <div class="bi-kpi-label">Margen de Ganancia Promedio</div>
+                <div class="bi-kpi-value-green">{margen_promedio:.1f}%</div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Gráfico de Tendencia Mensual de Ingresos vs Utilidad
+    df_ventas["mes_nombre"] = df_ventas["fecha_dt"].dt.strftime("%Y-%m")
+    df_finan_mensual = df_ventas.groupby("mes_nombre").agg({
+        "total": "sum",
+        "costo_total": "sum"
+    }).reset_index()
+    df_finan_mensual["Utilidad"] = df_finan_mensual["total"] - df_finan_mensual["costo_total"]
+
+    fig_trend = go.Figure()
+    fig_trend.add_trace(go.Bar(
+        x=df_finan_mensual["mes_nombre"], y=df_finan_mensual["total"],
+        name="Ingresos Brutos", marker_color="#3b82f6"
+    ))
+    fig_trend.add_trace(go.Scatter(
+        x=df_finan_mensual["mes_nombre"], y=df_finan_mensual["Utilidad"],
+        name="Utilidad Bruta Neta", line=dict(color="#10b981", width=3), mode='lines+markers'
+    ))
+    fig_trend.update_layout(
+        title="Ganancia Real vs Ingresos por Mes",
+        xaxis_title="Mes", yaxis_title="Monto ($)",
+        barmode='group', height=350, margin=dict(t=40, b=20, l=20, r=20),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+    st.plotly_chart(fig_trend, use_container_width=True)
+
+    st.markdown("---")
+
+    # ══════════════════════════════════════════════════════════════
+    # R2: ANÁLISIS DE ROTACIÓN DE INVENTARIO (ABC)
+    # ══════════════════════════════════════════════════════════════
+    st.markdown("#### 2. Clasificación ABC de Rotación de Inventario")
+    
+    sold_products = {}
+    if "detalles" in df_ventas.columns:
+        for _, sale in df_ventas.iterrows():
+            details = sale["detalles"]
+            if isinstance(details, str):
+                try: details = json.loads(details)
+                except: details = []
+            if isinstance(details, list):
+                for d in details:
+                    p_id = d.get("id_armazon")
+                    desc = d.get("descripcion", "Lunas/Laboratorio")
+                    p_qty = d.get("cantidad", 1)
+                    p_val = d.get("precio", 0.0)
+                    p_cost = d.get("costo", 0.0)
+                    
+                    key = str(p_id) if p_id else desc
+                    if key not in sold_products:
+                         sold_products[key] = {"Producto": desc, "Unidades Vendidas": 0, "Ingresos Totales": 0.0, "Costo Total": 0.0}
+                    sold_products[key]["Unidades Vendidas"] += p_qty
+                    sold_products[key]["Ingresos Totales"] += p_val * p_qty
+                    sold_products[key]["Costo Total"] += p_cost * p_qty
+
+    if sold_products:
+        df_sold = pd.DataFrame(sold_products.values())
+        # Clasificar usando valor monetario acumulado de ventas
+        df_sold = df_sold.sort_values(by="Ingresos Totales", ascending=False)
+        df_sold["cum_ingresos"] = df_sold["Ingresos Totales"].cumsum()
+        total_rev = df_sold["Ingresos Totales"].sum()
+        
+        if total_rev > 0:
+            df_sold["cum_pct"] = (df_sold["cum_ingresos"] / total_rev) * 100
+            
+            def abc_classify(pct):
+                if pct <= 70: return "A (Alta Rotación / 70% Valor)"
+                elif pct <= 90: return "B (Rotación Media / 20% Valor)"
+                else: return "C (Baja Rotación / 10% Valor)"
+            
+            df_sold["Clasificación ABC"] = df_sold["cum_pct"].apply(abc_classify)
+            
+            c_abc1, c_abc2 = st.columns([1, 1])
+            with c_abc1:
+                # Plotly Pie para Distribución ABC
+                df_abc_summary = df_sold.groupby("Clasificación ABC").agg({
+                    "Producto": "count",
+                    "Ingresos Totales": "sum"
+                }).reset_index().rename(columns={"Producto": "Cantidad de Productos"})
+                
+                fig_abc = px.pie(
+                    df_abc_summary, values="Ingresos Totales", names="Clasificación ABC",
+                    color_discrete_map={
+                        "A (Alta Rotación / 70% Valor)": "#10b981",
+                        "B (Rotación Media / 20% Valor)": "#f59e0b",
+                        "C (Baja Rotación / 10% Valor)": "#ef4444"
+                    },
+                    title="Contribución de Ingresos por Clasificación ABC"
+                )
+                fig_abc.update_layout(height=300, margin=dict(t=30, b=10, l=10, r=10))
+                st.plotly_chart(fig_abc, use_container_width=True)
+            with c_abc2:
+                st.caption("🔍 **Leyenda Estratégica ABC:**")
+                st.markdown("""
+                - **Clase A:** Generan el **70%** de los ingresos. Son tus productos estrella, mantén stock siempre disponible.
+                - **Clase B:** Generan el **20%** de ingresos. Productos de demanda media.
+                - **Clase C:** Generan solo el **10%** de ingresos. Estancados o de bajísima rotación. Evita sobrecompras.
+                """)
+                st.dataframe(df_sold[["Producto", "Unidades Vendidas", "Ingresos Totales", "Clasificación ABC"]].head(8), use_container_width=True, hide_index=True)
+    else:
+        st.info("Sin datos para análisis de rotación ABC.")
+
+>>>>>>> aeff6931d6ef494b1d01c194039daf01d34af7bb
     # ── AGREGAR EL ANÁLISIS ABC DE STOCK DE INVENTARIO (BODEGA) ORIGINAL ──
     st.markdown("#### 2.1. Análisis de Valor Estancado en Stock (Inventario en Bodega)")
     if not df_inv.empty:

@@ -97,25 +97,3 @@ def generar_msg_hc_lc(row, paciente_info) -> str:
         f"Por favor, envíenos su correo electrónico si prefiere recibirlo por esa vía, o envíenos un '+', y le enviaremos el documento en formato PDF por aquí.\n\n"
         f"📍 *Happy Vision* | 📞 +593 96 324 1158"
     )
-
-
-def generar_msg_recordatorio_cita(nombre_paciente: str, fecha: str, hora: str) -> str:
-    """Genera mensaje para recordar una cita agendada."""
-    return (
-        f"👋 Hola *{nombre_paciente}*,\n\n"
-        f"Te recordamos tu cita programada en *Happy Vision*:\n"
-        f"📅 *Fecha:* {fecha}\n"
-        f"⏰ *Hora:* {hora}\n\n"
-        f"Por favor, confírmanos tu asistencia respondiendo a este mensaje.\n"
-        f"¡Que tengas un excelente día! 👁️✨"
-    )
-
-
-def generar_msg_orden_lista(nombre_paciente: str) -> str:
-    """Genera mensaje para avisar que la orden de trabajo está lista."""
-    return (
-        f"🎉 Hola *{nombre_paciente}*,\n\n"
-        f"Te informamos que tus lentes ya se encuentran listos para retirar en nuestra sucursal de *Happy Vision*.\n\n"
-        f"📍 Puedes acercarte a retirarlos en nuestro horario habitual.\n"
-        f"¡Muchas gracias por tu confianza! 👓✨"
-    )

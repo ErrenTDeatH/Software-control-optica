@@ -83,6 +83,7 @@ def render_crm():
                 fecha_control = row.get("proximo_control")
                 meses = row.get("meses_proximo_control", 12)
 
+<<<<<<< HEAD
                 if dias is not None and dias < 0:
                     estado_label = f"🔴 Vencido hace {abs(dias)} días"
                     color = "#ef4444"
@@ -96,6 +97,28 @@ def render_crm():
 
                 col_info, col_wa = st.columns([5, 1])
                 with col_info:
+=======
+            col_info, col_wa = st.columns([5, 1])
+            with col_info:
+                st.markdown(
+                    f"<div style='background:{bg}; border-left:4px solid {color}; border-radius:8px; padding:10px 16px;'>"
+                    f"<b style='color:#e2e8f0;'>{nombre}</b> &nbsp;"
+                    f"<span style='color:{color}; font-size:13px;'>{estado_label}</span><br>"
+                    f"<span style='color:#94a3b8; font-size:12px;'>Última consulta: {fecha_ultima} · "
+                    f"Control programado cada: {meses} meses · 📞 {tel or 'Sin número'}</span>"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
+            with col_wa:
+                if tel:
+                    msg = (
+                        f"¡Hola, {nombre}! ✨ Esperamos que estés teniendo un excelente día.\n\n"
+                        f"En Happy Vision nos importa tu bienestar visual. Ya han pasado {meses} meses desde tu última visita el {fecha_ultima}, por lo que es el momento ideal para tu chequeo periódico de rutina. 👁️\n\n"
+                        f"¿Te gustaría agendar tu cita para esta semana?\n"
+                        f"📱 Responde directamente a este mensaje y coordinamos el día y la hora que te queden más cómodos. ¡Te esperamos!"
+                    )
+                    link = wa_link(tel, msg)
+>>>>>>> aeff6931d6ef494b1d01c194039daf01d34af7bb
                     st.markdown(
                         f"<div style='background:{bg}; border-left:4px solid {color}; border-radius:8px; padding:10px 16px;'>"
                         f"<b style='color:{text_col};'>{nombre}</b> &nbsp;"
